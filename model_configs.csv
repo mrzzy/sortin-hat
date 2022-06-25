@@ -1,0 +1,273 @@
+Level,Subject,Dataset,Task,Model,KNN
+S1,English,Combined,Grades,Decision Tree,TRUE
+S1,English,Combined,Scores,LR,TRUE
+S1,English,P6,Grades,Decision Tree,TRUE
+S1,English,P6,Scores,MLP,TRUE
+S1,E Math,Combined,Grades,Decision Tree,TRUE
+S1,E Math,Combined,Scores,LR,TRUE
+S1,E Math,P6,Grades,Decision Tree,TRUE
+S1,E Math,P6,Scores,XGBoost,TRUE
+S1,A Math,Combined,Grades,,TRUE
+S1,A Math,Combined,Scores,,TRUE
+S1,A Math,P6,Grades,,TRUE
+S1,A Math,P6,Scores,,TRUE
+S1,HCL,Combined,Grades,Auto SKL,TRUE
+S1,HCL,Combined,Scores,MLP,TRUE
+S1,HCL,P6,Grades,BLSTM,TRUE
+S1,HCL,P6,Scores,,TRUE
+S1,CL,Combined,Grades,Auto SKL,TRUE
+S1,CL,Combined,Scores,LR,TRUE
+S1,CL,P6,Grades,Decision Tree,TRUE
+S1,CL,P6,Scores,XGBoost,TRUE
+S1,ML,Combined,Grades,Decision Tree,TRUE
+S1,ML,Combined,Scores,MLP,TRUE
+S1,ML,P6,Grades,BLSTM,TRUE
+S1,ML,P6,Scores,XGBoost,TRUE
+S1,Geography,Combined,Grades,Auto SKL,TRUE
+S1,Geography,Combined,Scores,LR,FALSE
+S1,Geography,P6,Grades,BLSTM,TRUE
+S1,Geography,P6,Scores,MLP,TRUE
+S1,History,Combined,Grades,BLSTM,TRUE
+S1,History,Combined,Scores,LR,TRUE
+S1,History,P6,Grades,Decision Tree,TRUE
+S1,History,P6,Scores,XGBoost,TRUE
+S1,Science,Combined,Grades,Auto SKL,TRUE
+S1,Science,Combined,Scores,LR,TRUE
+S1,Science,P6,Grades,Decision Tree,TRUE
+S1,Science,P6,Scores,MLP,TRUE
+S1,Combined Humanities (SS/Geo),Combined,Grades,,TRUE
+S1,Combined Humanities (SS/Geo),Combined,Scores,,TRUE
+S1,Combined Humanities (SS/Geo),P6,Grades,,TRUE
+S1,Combined Humanities (SS/Geo),P6,Scores,,TRUE
+S1,Combined Humanities (SS/His),Combined,Grades,,TRUE
+S1,Combined Humanities (SS/His),Combined,Scores,,TRUE
+S1,Combined Humanities (SS/His),P6,Grades,,TRUE
+S1,Combined Humanities (SS/His),P6,Scores,,TRUE
+S1,Pure Biology,Combined,Grades,,TRUE
+S1,Pure Biology,Combined,Scores,,TRUE
+S1,Pure Biology,P6,Grades,,TRUE
+S1,Pure Biology,P6,Scores,,TRUE
+S1,Pure Chemistry,Combined,Grades,,TRUE
+S1,Pure Chemistry,Combined,Scores,,TRUE
+S1,Pure Chemistry,P6,Grades,,TRUE
+S1,Pure Chemistry,P6,Scores,,TRUE
+S1,Pure Physics,Combined,Grades,,TRUE
+S1,Pure Physics,Combined,Scores,,TRUE
+S1,Pure Physics,P6,Grades,,TRUE
+S1,Pure Physics,P6,Scores,,TRUE
+S1,Combined Science (Physics/Chemistry),Combined,Grades,,TRUE
+S1,Combined Science (Physics/Chemistry),Combined,Scores,,TRUE
+S1,Combined Science (Physics/Chemistry),P6,Grades,,TRUE
+S1,Combined Science (Physics/Chemistry),P6,Scores,,TRUE
+S1,Combined Science (Biology/Chemistry),Combined,Grades,,TRUE
+S1,Combined Science (Biology/Chemistry),Combined,Scores,,TRUE
+S1,Combined Science (Biology/Chemistry),P6,Grades,,TRUE
+S1,Combined Science (Biology/Chemistry),P6,Scores,,TRUE
+S1,Combined Science (Physics/Biology),Combined,Grades,,TRUE
+S1,Combined Science (Physics/Biology),Combined,Scores,,TRUE
+S1,Combined Science (Physics/Biology),P6,Grades,,TRUE
+S1,Combined Science (Physics/Biology),P6,Scores,,TRUE
+S2,English,Combined,Grades,Decision Tree,TRUE
+S2,English,Combined,Scores,LR,TRUE
+S2,English,P6,Grades,Auto SKL,TRUE
+S2,English,P6,Scores,XGBoost,TRUE
+S2,E Math,Combined,Grades,Decision Tree,TRUE
+S2,E Math,Combined,Scores,LR,TRUE
+S2,E Math,P6,Grades,BLSTM,TRUE
+S2,E Math,P6,Scores,MLP,TRUE
+S2,A Math,Combined,Grades,,TRUE
+S2,A Math,Combined,Scores,,TRUE
+S2,A Math,P6,Grades,,TRUE
+S2,A Math,P6,Scores,,TRUE
+S2,HCL,Combined,Grades,Auto SKL,TRUE
+S2,HCL,Combined,Scores,MLP,TRUE
+S2,HCL,P6,Grades,BLSTM,TRUE
+S2,HCL,P6,Scores,,TRUE
+S2,CL,Combined,Grades,Decision Tree,TRUE
+S2,CL,Combined,Scores,LR,TRUE
+S2,CL,P6,Grades,Decision Tree,TRUE
+S2,CL,P6,Scores,XGBoost,TRUE
+S2,ML,Combined,Grades,BLSTM,TRUE
+S2,ML,Combined,Scores,LR,TRUE
+S2,ML,P6,Grades,Auto SKL,TRUE
+S2,ML,P6,Scores,XGBoost,TRUE
+S2,Geography,Combined,Grades,Auto SKL,TRUE
+S2,Geography,Combined,Scores,MLP,TRUE
+S2,Geography,P6,Grades,Decision Tree,TRUE
+S2,Geography,P6,Scores,XGBoost,TRUE
+S2,History,Combined,Grades,Auto SKL,TRUE
+S2,History,Combined,Scores,MLP,FALSE
+S2,History,P6,Grades,Decision Tree,TRUE
+S2,History,P6,Scores,XGBoost,TRUE
+S2,Science,Combined,Grades,Auto SKL,TRUE
+S2,Science,Combined,Scores,MLP,TRUE
+S2,Science,P6,Grades,Auto SKL,TRUE
+S2,Science,P6,Scores,XGBoost,TRUE
+S2,Combined Humanities (SS/Geo),Combined,Grades,,TRUE
+S2,Combined Humanities (SS/Geo),Combined,Scores,,TRUE
+S2,Combined Humanities (SS/Geo),P6,Grades,,TRUE
+S2,Combined Humanities (SS/Geo),P6,Scores,,TRUE
+S2,Combined Humanities (SS/His),Combined,Grades,,TRUE
+S2,Combined Humanities (SS/His),Combined,Scores,,TRUE
+S2,Combined Humanities (SS/His),P6,Grades,,TRUE
+S2,Combined Humanities (SS/His),P6,Scores,,TRUE
+S2,Pure Biology,Combined,Grades,,TRUE
+S2,Pure Biology,Combined,Scores,,TRUE
+S2,Pure Biology,P6,Grades,,TRUE
+S2,Pure Biology,P6,Scores,,TRUE
+S2,Pure Chemistry,Combined,Grades,,TRUE
+S2,Pure Chemistry,Combined,Scores,,TRUE
+S2,Pure Chemistry,P6,Grades,,TRUE
+S2,Pure Chemistry,P6,Scores,,TRUE
+S2,Pure Physics,Combined,Grades,,TRUE
+S2,Pure Physics,Combined,Scores,,TRUE
+S2,Pure Physics,P6,Grades,,TRUE
+S2,Pure Physics,P6,Scores,,TRUE
+S2,Combined Science (Physics/Chemistry),Combined,Grades,,TRUE
+S2,Combined Science (Physics/Chemistry),Combined,Scores,,TRUE
+S2,Combined Science (Physics/Chemistry),P6,Grades,,TRUE
+S2,Combined Science (Physics/Chemistry),P6,Scores,,TRUE
+S2,Combined Science (Biology/Chemistry),Combined,Grades,,TRUE
+S2,Combined Science (Biology/Chemistry),Combined,Scores,,TRUE
+S2,Combined Science (Biology/Chemistry),P6,Grades,,TRUE
+S2,Combined Science (Biology/Chemistry),P6,Scores,,TRUE
+S2,Combined Science (Physics/Biology),Combined,Grades,,TRUE
+S2,Combined Science (Physics/Biology),Combined,Scores,,TRUE
+S2,Combined Science (Physics/Biology),P6,Grades,,TRUE
+S2,Combined Science (Physics/Biology),P6,Scores,,TRUE
+S3,English,Combined,Grades,Decision Tree,TRUE
+S3,English,Combined,Scores,LR,TRUE
+S3,English,P6,Grades,Decision Tree,TRUE
+S3,English,P6,Scores,MLP,FALSE
+S3,E Math,Combined,Grades,Decision Tree,TRUE
+S3,E Math,Combined,Scores,LR,TRUE
+S3,E Math,P6,Grades,Decision Tree,TRUE
+S3,E Math,P6,Scores,XGBoost,TRUE
+S3,A Math,Combined,Grades,Auto SKL,TRUE
+S3,A Math,Combined,Scores,LR,TRUE
+S3,A Math,P6,Grades,Auto SKL,TRUE
+S3,A Math,P6,Scores,MLP,TRUE
+S3,HCL,Combined,Grades,Decision Tree,TRUE
+S3,HCL,Combined,Scores,MLP,TRUE
+S3,HCL,P6,Grades,,TRUE
+S3,HCL,P6,Scores,,TRUE
+S3,CL,Combined,Grades,Auto SKL,TRUE
+S3,CL,Combined,Scores,LR,TRUE
+S3,CL,P6,Grades,Decision Tree,TRUE
+S3,CL,P6,Scores,XGBoost,TRUE
+S3,ML,Combined,Grades,Auto SKL,TRUE
+S3,ML,Combined,Scores,MLP,TRUE
+S3,ML,P6,Grades,BLSTM,TRUE
+S3,ML,P6,Scores,XGBoost,TRUE
+S3,Geography,Combined,Grades,Decision Tree,TRUE
+S3,Geography,Combined,Scores,MLP,TRUE
+S3,Geography,P6,Grades,Auto SKL,TRUE
+S3,Geography,P6,Scores,MLP,TRUE
+S3,History,Combined,Grades,Auto SKL,TRUE
+S3,History,Combined,Scores,LR,TRUE
+S3,History,P6,Grades,Auto SKL,TRUE
+S3,History,P6,Scores,MLP,TRUE
+S3,Science,Combined,Grades,,TRUE
+S3,Science,Combined,Scores,,TRUE
+S3,Science,P6,Grades,,TRUE
+S3,Science,P6,Scores,,TRUE
+S3,Combined Humanities (SS/Geo),Combined,Grades,Auto SKL,TRUE
+S3,Combined Humanities (SS/Geo),Combined,Scores,MLP,TRUE
+S3,Combined Humanities (SS/Geo),P6,Grades,Auto SKL,TRUE
+S3,Combined Humanities (SS/Geo),P6,Scores,XGBoost,TRUE
+S3,Combined Humanities (SS/His),Combined,Grades,Decision Tree,TRUE
+S3,Combined Humanities (SS/His),Combined,Scores,MLP,TRUE
+S3,Combined Humanities (SS/His),P6,Grades,BLSTM,TRUE
+S3,Combined Humanities (SS/His),P6,Scores,MLP,TRUE
+S3,Pure Biology,Combined,Grades,Decision Tree,TRUE
+S3,Pure Biology,Combined,Scores,XGBoost,TRUE
+S3,Pure Biology,P6,Grades,Auto SKL,TRUE
+S3,Pure Biology,P6,Scores,MLP,TRUE
+S3,Pure Chemistry,Combined,Grades,Decision Tree,TRUE
+S3,Pure Chemistry,Combined,Scores,XGBoost,TRUE
+S3,Pure Chemistry,P6,Grades,Decision Tree,TRUE
+S3,Pure Chemistry,P6,Scores,MLP,TRUE
+S3,Pure Physics,Combined,Grades,Auto SKL,TRUE
+S3,Pure Physics,Combined,Scores,MLP,TRUE
+S3,Pure Physics,P6,Grades,BLSTM,TRUE
+S3,Pure Physics,P6,Scores,MLP,TRUE
+S3,Combined Science (Physics/Chemistry),Combined,Grades,Decision Tree,TRUE
+S3,Combined Science (Physics/Chemistry),Combined,Scores,MLP,TRUE
+S3,Combined Science (Physics/Chemistry),P6,Grades,Decision Tree,TRUE
+S3,Combined Science (Physics/Chemistry),P6,Scores,MLP,TRUE
+S3,Combined Science (Biology/Chemistry),Combined,Grades,Decision Tree,TRUE
+S3,Combined Science (Biology/Chemistry),Combined,Scores,LR,TRUE
+S3,Combined Science (Biology/Chemistry),P6,Grades,Auto SKL,TRUE
+S3,Combined Science (Biology/Chemistry),P6,Scores,LR,TRUE
+S3,Combined Science (Physics/Biology),Combined,Grades,Decision Tree,TRUE
+S3,Combined Science (Physics/Biology),Combined,Scores,LR,TRUE
+S3,Combined Science (Physics/Biology),P6,Grades,BLSTM,TRUE
+S3,Combined Science (Physics/Biology),P6,Scores,MLP,TRUE
+S4,English,Combined,Grades,Auto SKL,TRUE
+S4,English,Combined,Scores,LR,TRUE
+S4,English,P6,Grades,Auto SKL,TRUE
+S4,English,P6,Scores,Auto SKL,TRUE
+S4,E Math,Combined,Grades,Auto SKL,TRUE
+S4,E Math,Combined,Scores,MLP,TRUE
+S4,E Math,P6,Grades,Decision Tree,TRUE
+S4,E Math,P6,Scores,MLP,TRUE
+S4,A Math,Combined,Grades,Auto SKL,TRUE
+S4,A Math,Combined,Scores,XGBoost,TRUE
+S4,A Math,P6,Grades,Auto SKL,TRUE
+S4,A Math,P6,Scores,XGBoost,TRUE
+S4,HCL,Combined,Grades,Decision Tree,TRUE
+S4,HCL,Combined,Scores,MLP,TRUE
+S4,HCL,P6,Grades,Auto SKL,TRUE
+S4,HCL,P6,Scores,Auto SKL,TRUE
+S4,CL,Combined,Grades,Auto SKL,TRUE
+S4,CL,Combined,Scores,MLP,TRUE
+S4,CL,P6,Grades,Decision Tree,TRUE
+S4,CL,P6,Scores,XGBoost,TRUE
+S4,ML,Combined,Grades,Decision Tree,TRUE
+S4,ML,Combined,Scores,XGBoost,TRUE
+S4,ML,P6,Grades,BLSTM,TRUE
+S4,ML,P6,Scores,XGBoost,TRUE
+S4,Geography,Combined,Grades,Auto SKL,TRUE
+S4,Geography,Combined,Scores,XGBoost,TRUE
+S4,Geography,P6,Grades,Auto SKL,TRUE
+S4,Geography,P6,Scores,XGBoost,FALSE
+S4,History,Combined,Grades,Decision Tree,TRUE
+S4,History,Combined,Scores,MLP,FALSE
+S4,History,P6,Grades,Decision Tree,TRUE
+S4,History,P6,Scores,MLP,FALSE
+S4,Science,Combined,Grades,,TRUE
+S4,Science,Combined,Scores,,TRUE
+S4,Science,P6,Grades,,TRUE
+S4,Science,P6,Scores,,TRUE
+S4,Combined Humanities (SS/Geo),Combined,Grades,BLSTM,TRUE
+S4,Combined Humanities (SS/Geo),Combined,Scores,XGBoost,FALSE
+S4,Combined Humanities (SS/Geo),P6,Grades,Decision Tree,TRUE
+S4,Combined Humanities (SS/Geo),P6,Scores,MLP,TRUE
+S4,Combined Humanities (SS/His),Combined,Grades,Decision Tree,TRUE
+S4,Combined Humanities (SS/His),Combined,Scores,MLP,TRUE
+S4,Combined Humanities (SS/His),P6,Grades,BLSTM,TRUE
+S4,Combined Humanities (SS/His),P6,Scores,XGBoost,TRUE
+S4,Pure Biology,Combined,Grades,Decision Tree,TRUE
+S4,Pure Biology,Combined,Scores,LR,TRUE
+S4,Pure Biology,P6,Grades,Decision Tree,TRUE
+S4,Pure Biology,P6,Scores,XGBoost,TRUE
+S4,Pure Chemistry,Combined,Grades,Decision Tree,TRUE
+S4,Pure Chemistry,Combined,Scores,MLP,TRUE
+S4,Pure Chemistry,P6,Grades,Auto SKL,TRUE
+S4,Pure Chemistry,P6,Scores,LR,TRUE
+S4,Pure Physics,Combined,Grades,Auto SKL,TRUE
+S4,Pure Physics,Combined,Scores,XGBoost,TRUE
+S4,Pure Physics,P6,Grades,BLSTM,TRUE
+S4,Pure Physics,P6,Scores,LR,TRUE
+S4,Combined Science (Physics/Chemistry),Combined,Grades,Auto SKL,TRUE
+S4,Combined Science (Physics/Chemistry),Combined,Scores,LR,TRUE
+S4,Combined Science (Physics/Chemistry),P6,Grades,Decision Tree,TRUE
+S4,Combined Science (Physics/Chemistry),P6,Scores,XGBoost,TRUE
+S4,Combined Science (Biology/Chemistry),Combined,Grades,Auto SKL,TRUE
+S4,Combined Science (Biology/Chemistry),Combined,Scores,MLP,TRUE
+S4,Combined Science (Biology/Chemistry),P6,Grades,Decision Tree,TRUE
+S4,Combined Science (Biology/Chemistry),P6,Scores,XGBoost,TRUE
+S4,Combined Science (Physics/Biology),Combined,Grades,BLSTM,TRUE
+S4,Combined Science (Physics/Biology),Combined,Scores,LR,TRUE
+S4,Combined Science (Physics/Biology),P6,Grades,Decision Tree,TRUE
+S4,Combined Science (Physics/Biology),P6,Scores,XGBoost,TRUE
