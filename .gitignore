@@ -195,3 +195,7 @@ tags.lock
 
 # original project dirctory
 /original/
+
+# vim editor
+/.vim/
+/pyrightconfig.json
