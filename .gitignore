@@ -193,9 +193,13 @@ tags
 tags.temp
 tags.lock
 
-# original project dirctory
-/original/
 
 # vim editor
 /.vim/
 /pyrightconfig.json
+
+# dataset directory
+/dataset/
+
+# original project directory
+/original/
