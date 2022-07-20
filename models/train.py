@@ -64,10 +64,6 @@ if __name__ == "__main__":
         with ml.start_run() as run:
             # set model training / evaluation run parammeters
             params = {
-                "split": {
-                    "random_state": 42,
-                    "test_size": 0.3,
-                },
                 "linear_l2_reg": 3e3,
             }
             ml.log_params(params)
@@ -80,8 +76,8 @@ if __name__ == "__main__":
             ) = train_test_split(
                 features_df,
                 targets,
-                random_state=params["split"]["random_state"],
-                test_size=params["split"]["test_size"],
+                random_state=42,
+                test_size=0.3,
             )
 
             # build linear model pipeline
