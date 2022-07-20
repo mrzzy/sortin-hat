@@ -285,7 +285,6 @@ def load_dataset(
     ]
 
     # read data files as dataframes
-    # TODO(mrzzy): read with static dtypes instead of autodetect to gut ram use
     extract_dfs = [pd.read_excel(str(p)) for p in extract_paths]
     # use second row as a header for p6 screening data
     p6_dfs = [pd.read_excel(str(p), header=1) for p in p6_paths]
@@ -311,16 +310,16 @@ def load_dataset(
 
 def segment_dataset(
     df: pd.DataFrame,
-) -> Iterable[Tuple[str, str, pd.DataFrame, pd.Series]]:
+) -> Iterable[Tuple[str, pd.DataFrame, pd.Series]]:
     """Segments the given dataset into features & targets for training models to predict each subject & level.
 
     Segments the dataset to input features & output targets for training
-    models to predic subjects by secondary school level (S1-S4).
+    models to predict subjects by secondary school level (S1-S4).
 
     Args:
         df: Pandas dataframe of the dataset to segment.
     Returns:
-        Generator producing (level, subject, features, labels) for each subject by level.
+        Generator producing (subject, features, labels) for each subject by level.
     """
     grad_level = 4
     for level in range(1, grad_level + 1):
@@ -340,4 +339,4 @@ def segment_dataset(
                 ]
             ]
 
-            yield (f"S{level}", subject, features_df, subject_df[subject])
+            yield (subject, features_df, subject_df[subject])

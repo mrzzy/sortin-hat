@@ -5,8 +5,9 @@
 
 import re
 import pandas as pd
+import mlflow as ml
+import logging as log
 
-from logging import log
 from pathlib import Path
 from argparse import ArgumentParser
 
@@ -53,48 +54,57 @@ if __name__ == "__main__":
 
     # load dataset
     df = load_dataset(args.data_dir, args.extract_regex, args.p6_regex)
-    print(df.columns.values)
-    for level, subject, features_df, targets in segment_dataset(df):
+    for subject, features_df, targets in segment_dataset(df):
         # skip subjects with too few rows (<20)
         if len(targets) < 20:
-            log.warning(
-                f"Skipping subject with <20 rows: {subject} - {len(targets)}"
-            )
+            log.warning(f"Skipping subject with <20 rows: {subject} - {len(targets)}")
             continue
 
-        # hold out a test set for to faciliate unbiased model evaluation later
-        (
-            train_features,
-            test_features,
-            train_targets,
-            test_targets,
-        ) = train_test_split(features_df, targets, random_state=42, test_size=0.3)
-
-        # build linear model pipeline
-        model = Pipeline(
-            steps=[
-                ("imputer", KNNImputer()),
-                ("scale", StandardScaler()),
-                ("LR", Ridge(alpha=3e3)),
-            ]
-        )
-
-        # evaluate model performance with k fold cross validation
-        scores_df = pd.DataFrame(
-            cross_validate(
-                model,
+        ml.set_experiment(subject)
+        with ml.start_run() as run:
+            # set model training / evaluation run parammeters
+            params = {
+                "split": {
+                    "random_state": 42,
+                    "test_size": 0.3,
+                },
+                "linear_l2_reg": 3e3,
+            }
+            ml.log_params(params)
+            # hold out a test set for to faciliate unbiased model evaluation later
+            (
                 train_features,
+                test_features,
                 train_targets,
-                scoring=["neg_root_mean_squared_error", "r2"],
-                return_train_score=True,
-                cv=5,
-                n_jobs=-1,
+                test_targets,
+            ) = train_test_split(
+                features_df,
+                targets,
+                random_state=params["split"]["random_state"],
+                test_size=params["split"]["test_size"],
             )
-        )
-        print("=================== {", subject, "} ====================")
-        metrics = [
-            metric
-            for metric in scores_df.columns
-            if "train" in metric or "test" in metric
-        ]
-        print(scores_df[metrics].mean())
+
+            # build linear model pipeline
+            model = Pipeline(
+                steps=[
+                    ("imputer", KNNImputer()),
+                    ("scale", StandardScaler()),
+                    ("LR", Ridge(alpha=params["linear_l2_reg"])),
+                ]
+            )
+
+            # evaluate model performance with k fold cross validation
+            metrics_df = pd.DataFrame(
+                cross_validate(
+                    model,
+                    train_features,
+                    train_targets,
+                    scoring=["neg_root_mean_squared_error", "r2"],
+                    return_train_score=True,
+                    cv=5,
+                    n_jobs=-1,
+                )
+            ).mean()
+            ml.log_metrics(metrics_df.to_dict())
+            log.info("=================== {", subject, "} ====================")
+            log.info(metrics_df)
