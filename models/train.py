@@ -92,6 +92,7 @@ if __name__ == "__main__":
                     ("LR", Ridge(alpha=params["linear_l2_reg"])),
                 ]
             )
+            ml.sklearn.log_model(model, "sklearn")
 
             # evaluate model performance with k fold cross validation
             metrics_df = pd.DataFrame(
