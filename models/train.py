@@ -24,10 +24,14 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Train Models")
 
     parser.add_argument(
-        "DATA_DIR",
+        "data_dir",
         type=Path,
         help="Directory to source model training data from.",
     )
+    parser.add_argument(
+        "models_dir",
+        type=Path,
+        help="Path to output trained models & metrics as an MLflow filestore")
     parser.add_argument(
         "--extract-regex",
         type=re.compile,
@@ -43,16 +47,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if not args.DATA_DIR.is_dir():
-        raise ValueError("Expected DATA_DIR to be a path to valid directory.")
+    if not args.data_dir.is_dir():
+        raise ValueError("Expected data_dir to be a path to valid directory.")
 
     # load dataset
-    df = load_dataset(args.DATA_DIR, args.extract_regex, args.p6_regex)
+    df = load_dataset(args.data_dir, args.extract_regex, args.p6_regex)
 
     # Train models to predict by scores by secondary level & subject
-    grad_level = 4 + 1
-    for level in range(1, grad_level):
-        future_levels = [f"S{l}" for l in range(level, grad_level)]
+    grad_level = 4
+    for level in range(1, grad_level + 1):
+        future_levels = [f"S{l}" for l in range(level, grad_level + 1)]
 
         for subject in [col for col in df.columns if f"S{level}" in col]:
             # drop rows with NAN on target subject scores
@@ -113,5 +117,3 @@ if __name__ == "__main__":
                 if "train" in metric or "test" in metric
             ]
             print(scores_df[metrics].mean())
-
-            # TODO(mrzzy): fix overfitting
