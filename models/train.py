@@ -5,8 +5,8 @@
 
 import re
 import pandas as pd
-import logging as log
 
+from logging import log
 from pathlib import Path
 from argparse import ArgumentParser
 
@@ -16,7 +16,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.linear_model import Ridge
 from sklearn.impute import KNNImputer
 
-from prepare import load_dataset
+from prepare import load_dataset, segment_dataset
 
 
 if __name__ == "__main__":
@@ -31,7 +31,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "models_dir",
         type=Path,
-        help="Path to output trained models & metrics as an MLflow filestore")
+        help="Path to output trained models & metrics as an MLflow filestore",
+    )
     parser.add_argument(
         "--extract-regex",
         type=re.compile,
@@ -52,68 +53,48 @@ if __name__ == "__main__":
 
     # load dataset
     df = load_dataset(args.data_dir, args.extract_regex, args.p6_regex)
+    print(df.columns.values)
+    for level, subject, features_df, targets in segment_dataset(df):
+        # skip subjects with too few rows (<20)
+        if len(targets) < 20:
+            log.warning(
+                f"Skipping subject with <20 rows: {subject} - {len(targets)}"
+            )
+            continue
 
-    # Train models to predict by scores by secondary level & subject
-    grad_level = 4
-    for level in range(1, grad_level + 1):
-        future_levels = [f"S{l}" for l in range(level, grad_level + 1)]
+        # hold out a test set for to faciliate unbiased model evaluation later
+        (
+            train_features,
+            test_features,
+            train_targets,
+            test_targets,
+        ) = train_test_split(features_df, targets, random_state=42, test_size=0.3)
 
-        for subject in [col for col in df.columns if f"S{level}" in col]:
-            # drop rows with NAN on target subject scores
-            subject_df = df[~df[subject].isna()]
-
-            # skip subjects with too few rows (<20)
-            if len(subject_df) < 20:
-                log.warning(
-                    f"Skipping subject with <20 rows: {subject} - {len(subject_df)}"
-                )
-                continue
-
-            # drop subjects taken in current & levels to prevent time leakage
-            # in input features
-            features_df = subject_df[
-                [
-                    col
-                    for col in df.columns
-                    if not any([l in col for l in future_levels])
-                ]
+        # build linear model pipeline
+        model = Pipeline(
+            steps=[
+                ("imputer", KNNImputer()),
+                ("scale", StandardScaler()),
+                ("LR", Ridge(alpha=3e3)),
             ]
+        )
 
-            # hold out a test set for to faciliate unbiased model evaluation later
-            (
+        # evaluate model performance with k fold cross validation
+        scores_df = pd.DataFrame(
+            cross_validate(
+                model,
                 train_features,
-                test_features,
                 train_targets,
-                test_targets,
-            ) = train_test_split(
-                features_df, subject_df[subject], random_state=42, test_size=0.3
+                scoring=["neg_root_mean_squared_error", "r2"],
+                return_train_score=True,
+                cv=5,
+                n_jobs=-1,
             )
-
-            # build linear model pipeline
-            model = Pipeline(
-                steps=[
-                    ("imputer", KNNImputer()),
-                    ("scale", StandardScaler()),
-                    ("LR", Ridge(alpha=3e+3)),
-                ]
-            )
-
-            # evaluate model performance with k fold cross validation
-            scores_df = pd.DataFrame(
-                cross_validate(
-                    model,
-                    train_features,
-                    train_targets,
-                    scoring=["neg_root_mean_squared_error", "r2"],
-                    return_train_score=True,
-                    cv=5,
-                    n_jobs=-1,
-                )
-            )
-            print("=================== {", subject, "} ====================")
-            metrics = [
-                metric
-                for metric in scores_df.columns
-                if "train" in metric or "test" in metric
-            ]
-            print(scores_df[metrics].mean())
+        )
+        print("=================== {", subject, "} ====================")
+        metrics = [
+            metric
+            for metric in scores_df.columns
+            if "train" in metric or "test" in metric
+        ]
+        print(scores_df[metrics].mean())

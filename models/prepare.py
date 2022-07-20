@@ -5,7 +5,7 @@
 #
 
 from pathlib import Path
-from typing import List, cast
+from typing import Iterable, List, Tuple, cast
 import numpy as np
 import pandas as pd
 from sklearn.base import re
@@ -307,3 +307,37 @@ def load_dataset(
     dataset_df = df.drop(columns=["Serial number"])
 
     return dataset_df
+
+
+def segment_dataset(
+    df: pd.DataFrame,
+) -> Iterable[Tuple[str, str, pd.DataFrame, pd.Series]]:
+    """Segments the given dataset into features & targets for training models to predict each subject & level.
+
+    Segments the dataset to input features & output targets for training
+    models to predic subjects by secondary school level (S1-S4).
+
+    Args:
+        df: Pandas dataframe of the dataset to segment.
+    Returns:
+        Generator producing (level, subject, features, labels) for each subject by level.
+    """
+    grad_level = 4
+    for level in range(1, grad_level + 1):
+        future_levels = [f"S{l}" for l in range(level, grad_level + 1)]
+
+        for subject in [col for col in df.columns if f"S{level}" in col]:
+            # drop rows with NAN on target subject scores
+            subject_df = df[~df[subject].isna()]
+
+            # drop subjects taken in future levels to prevent time leakage
+            # in input features
+            features_df = subject_df[
+                [
+                    col
+                    for col in df.columns
+                    if not any([l in col for l in future_levels])
+                ]
+            ]
+
+            yield (f"S{level}", subject, features_df, subject_df[subject])
