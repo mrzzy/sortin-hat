@@ -7,14 +7,22 @@ import mlflow
 
 from typing import Any, Dict
 from sklearn.impute import KNNImputer, SimpleImputer
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import ElasticNet
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 
 params = {
     "imputer": "knn",
     "scaler": "std",
-    "model": {"flavor": "sklearn","kind": "lr_ridge", "hyperparams": {"alpha": 3e3}},
+    "model": {
+        "flavor": "sklearn",
+        "kind": "lr_elasticnet",
+        "hyperparams": {
+            "alpha": 1.0,
+            "l1_ratio": 0.5,
+            "random_state": 42,
+        },
+    },
 }
 
 # Feature Extraction
@@ -23,7 +31,7 @@ imputers = {"median": SimpleImputer(strategy="median"), "knn": KNNImputer()}
 scalers = {"std": StandardScaler(), "minmax": MinMaxScaler()}
 
 # Model Selection
-models = {"lr_ridge": Ridge}
+models = {"lr_elasticnet": ElasticNet}
 
 # MLflow model flavor loggers
 model_loggers = {
@@ -45,7 +53,7 @@ def hydrate(params: Dict[str, Any]) -> Dict[str, Any]:
         "scaler": scalers[params["scaler"]],
     }
 
-    # build model with given hyperpameters
+    # build model with given hyperparameters
     Model = models[params["model"]["kind"]]
     components["model"] = Model(**params["model"]["hyperparams"])
     components["log_model"] = model_loggers[params["model"]["flavor"]]
