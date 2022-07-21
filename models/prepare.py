@@ -54,7 +54,7 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
     Suffix subject columns in the given 'Data Extraction' dataframe with the
     secondary school level the subject was taken.
 
-    For example: English columns will be suffixed: "English S1", "English S2"
+    For example: English columns will be suffixed: "English [S1]", "English [S2]"
     to signify that the subject was taken in Secondary 1 & 2 respectively.
 
     Infers the level the subject taken from the 'YYYY Results' columns in the
@@ -112,7 +112,7 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
             return match.group("subject")
 
     rename_map = {
-        col: f"{strip_digit(col)} {level_map[year_result]}"
+        col: f"{strip_digit(col)} [{level_map[year_result]}]"
         for year_result in year_results
         for col in year_columns[year_result]
     }
@@ -323,9 +323,9 @@ def segment_dataset(
     """
     grad_level = 4
     for level in range(1, grad_level + 1):
-        future_levels = [f"S{l}" for l in range(level, grad_level + 1)]
+        future_levels = [f"[S{l}]" for l in range(level, grad_level + 1)]
 
-        for subject in [col for col in df.columns if f"S{level}" in col]:
+        for subject in [col for col in df.columns if f"[S{level}]" in col]:
             # drop rows with NAN on target subject scores
             subject_df = df[~df[subject].isna()]
 
