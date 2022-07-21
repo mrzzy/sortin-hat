@@ -62,7 +62,7 @@ if __name__ == "__main__":
     for subject, features_df, targets in segment_dataset(df):
         # skip subjects with too few rows (<20)
         if len(targets) < 20:
-            log.warning(f"Skipping subject with <20 rows: {subject} - {len(targets)}")
+            log.warning(f"Skipping subject with <20 rows: subject={subject} rows={len(targets)}")
             continue
 
         experiment = ml.set_experiment(subject)
