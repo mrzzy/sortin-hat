@@ -11,13 +11,11 @@ import logging as log
 from pathlib import Path
 from argparse import ArgumentParser
 
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import Ridge
-from sklearn.impute import KNNImputer
 
 from prepare import load_dataset, segment_dataset
+from params import params, hydrate
 
 
 if __name__ == "__main__":
@@ -75,12 +73,8 @@ if __name__ == "__main__":
 
         experiment = ml.set_experiment(subject)
         with ml.start_run(experiment_id=experiment.experiment_id) as run:
-            # tag run with dataset segment
+            # tag run with dataset segment & log model training / evaluation run parameters
             ml.set_tags({"level": f"S{level}", "subject": subject})
-            # set model training / evaluation run parammeters
-            params = {
-                "linear_l2_reg": 3e3,
-            }
             ml.log_params(params)
             # hold out a test set for to faciliate unbiased model evaluation later
             (
@@ -96,14 +90,12 @@ if __name__ == "__main__":
             )
 
             # build linear model pipeline
+            components = hydrate(params)
             model = Pipeline(
-                steps=[
-                    ("imputer", KNNImputer()),
-                    ("scale", StandardScaler()),
-                    ("LR", Ridge(alpha=params["linear_l2_reg"])),
-                ]
+                steps=[(k, components[k]) for k in ["imputer", "scaler", "model"]]
             )
-            ml.sklearn.log_model(model, "sklearn")
+            # save trained model to mlflow
+            components["log_model"](model, params["model"]["flavor"])
 
             # evaluate model performance with k fold cross validation
             metrics_df = pd.DataFrame(
