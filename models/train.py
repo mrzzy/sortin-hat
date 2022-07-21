@@ -30,9 +30,10 @@ if __name__ == "__main__":
         help="Directory to source model training data from.",
     )
     parser.add_argument(
-        "models_dir",
-        type=Path,
-        help="Path to output trained models & metrics as an MLflow filestore",
+        "mlflow_url",
+        type=str,
+        help="MLFlow URL to output train ML model, hyperparameters & metrics to.",
+        default=ml.get_tracking_uri(),
     )
     parser.add_argument(
         "--extract-regex",
@@ -51,6 +52,10 @@ if __name__ == "__main__":
 
     if not args.data_dir.is_dir():
         raise ValueError("Expected data_dir to be a path to valid directory.")
+
+    # configure mlflow to output to mlflow tracking server
+    ml.set_registry_uri(args.mlflow_url)
+    ml.set_tracking_uri(args.mlflow_url)
 
     # load dataset
     df = load_dataset(args.data_dir, args.extract_regex, args.p6_regex)
