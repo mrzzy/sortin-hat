@@ -64,7 +64,8 @@ if __name__ == "__main__":
 
     # load dataset
     df = load_dataset(args.data_dir, args.extract_regex, args.p6_regex)
-    for subject, features_df, targets in segment_dataset(df):
+
+    for level, subject, features_df, targets in segment_dataset(df):
         # skip subjects with too few rows (<20)
         if len(targets) < 20:
             l.warning(
@@ -74,6 +75,8 @@ if __name__ == "__main__":
 
         experiment = ml.set_experiment(subject)
         with ml.start_run(experiment_id=experiment.experiment_id) as run:
+            # tag run with dataset segment
+            ml.set_tags({"level": f"S{level}", "subject": subject})
             # set model training / evaluation run parammeters
             params = {
                 "linear_l2_reg": 3e3,

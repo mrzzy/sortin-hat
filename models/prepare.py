@@ -310,7 +310,7 @@ def load_dataset(
 
 def segment_dataset(
     df: pd.DataFrame,
-) -> Iterable[Tuple[str, pd.DataFrame, pd.Series]]:
+) -> Iterable[Tuple[int, str, pd.DataFrame, pd.Series]]:
     """Segments the given dataset into features & targets for training models to predict each subject & level.
 
     Segments the dataset to input features & output targets for training
@@ -319,7 +319,7 @@ def segment_dataset(
     Args:
         df: Pandas dataframe of the dataset to segment.
     Returns:
-        Generator producing (subject, features, labels) for each subject by level.
+        Generator producing (level, subject, features, labels) for each subject by level.
     """
     grad_level = 4
     for level in range(1, grad_level + 1):
@@ -339,4 +339,7 @@ def segment_dataset(
                 ]
             ]
 
-            yield (subject, features_df, subject_df[subject])
+            # strip level suffix from subject name
+            subject_name = cast(str, subject.replace(f"[S{level}]", "").rstrip())
+
+            yield (level, subject_name, features_df, subject_df[subject])
