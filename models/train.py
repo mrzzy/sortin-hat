@@ -72,42 +72,50 @@ if __name__ == "__main__":
             continue
 
         experiment = ml.set_experiment(subject)
-        with ml.start_run(experiment_id=experiment.experiment_id) as run:
-            # tag run with dataset segment & log model training / evaluation run parameters
-            ml.set_tags({"level": f"S{level}", "subject": subject})
-            ml.log_params(params)
-            # hold out a test set for to faciliate unbiased model evaluation later
-            (
-                train_features,
-                test_features,
-                train_targets,
-                test_targets,
-            ) = train_test_split(
-                features_df,
-                targets,
-                random_state=42,
-                test_size=0.3,
-            )
 
-            # build linear model pipeline
-            components = hydrate(params)
-            model = Pipeline(
-                steps=[(k, components[k]) for k in ["imputer", "scaler", "model"]]
-            )
-            # save trained model to mlflow
-            components["log_model"](model, params["model"]["flavor"])
-
-            # evaluate model performance with k fold cross validation
-            metrics_df = pd.DataFrame(
-                cross_validate(
-                    model,
-                    train_features,
-                    train_targets,
-                    scoring=["neg_root_mean_squared_error", "r2"],
-                    return_train_score=True,
-                    cv=5,
-                    n_jobs=-1,
+        # train all model / subject combinations
+        components = hydrate(params)
+        for model in components["models"]:
+            with ml.start_run(experiment_id=experiment.experiment_id) as run:
+                # tag run with dataset segment & log model training / evaluation run parameters
+                ml.set_tags(
+                    {"level": f"S{level}", "subject": subject, "model": model["kind"]}
                 )
-            ).mean()
-            ml.log_metrics(metrics_df.to_dict())
-            l.info(f"Trained Model with metrics: \n{metrics_df}")
+                ml.log_params(params)
+                # hold out a test set for to faciliate unbiased model evaluation later
+                (
+                    train_features,
+                    test_features,
+                    train_targets,
+                    test_targets,
+                ) = train_test_split(
+                    features_df,
+                    targets,
+                    random_state=42,
+                    test_size=0.3,
+                )
+
+                # build model pipeline
+                pipeline = Pipeline(
+                    steps=[(k, components[k]) for k in ["imputer", "scaler"]]
+                    + [
+                        ("model", model["model"]),
+                    ],
+                )
+                # save trained model to mlflow
+                model["logger"](pipeline, model["flavor"])
+
+                # evaluate model performance with k fold cross validation
+                metrics_df = pd.DataFrame(
+                    cross_validate(
+                        pipeline,
+                        train_features,
+                        train_targets,
+                        scoring=["neg_root_mean_squared_error", "r2"],
+                        return_train_score=True,
+                        cv=5,
+                        n_jobs=-1,
+                    )
+                ).mean()
+                ml.log_metrics(metrics_df.to_dict())
+                l.info(f"Trained Model with metrics: \n{metrics_df}")
