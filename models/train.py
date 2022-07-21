@@ -21,6 +21,11 @@ from prepare import load_dataset, segment_dataset
 
 
 if __name__ == "__main__":
+    log.basicConfig(
+        level=log.INFO, format="%(asctime)s:%(levelname)s:%(name)s: %(message)s"
+    )
+    l = log.getLogger(__file__)
+
     # parse command line arguments
     parser = ArgumentParser(description="Train Models")
 
@@ -62,7 +67,9 @@ if __name__ == "__main__":
     for subject, features_df, targets in segment_dataset(df):
         # skip subjects with too few rows (<20)
         if len(targets) < 20:
-            log.warning(f"Skipping subject with <20 rows: subject={subject} rows={len(targets)}")
+            l.warning(
+                f"Skipping subject with <20 rows: subject={subject} rows={len(targets)}"
+            )
             continue
 
         experiment = ml.set_experiment(subject)
@@ -108,5 +115,4 @@ if __name__ == "__main__":
                 )
             ).mean()
             ml.log_metrics(metrics_df.to_dict())
-            log.info("=================== {", subject, "} ====================")
-            log.info(metrics_df)
+            l.info(f"Trained Model with metrics: \n{metrics_df}")
