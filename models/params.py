@@ -1,4 +1,3 @@
-#
 # Sort'in Hat
 # Model Training Parameters
 #
@@ -9,6 +8,7 @@ from typing import Any, Dict
 from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.linear_model import ElasticNet
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from xgboost import XGBRegressor
 
@@ -18,7 +18,7 @@ params = {
     "models": [
         {
             "flavor": "sklearn",
-            "kind": "lr_elasticnet",
+            "kind": "linear",
             "hyperparams": {
                 "alpha": 1.0,
                 "l1_ratio": 0.5,
@@ -46,7 +46,19 @@ params = {
                 "reg_lambda": 1,  # l2 regularization
                 "reg_alpha": 0,  # l2 regularization
             },
-        }
+        },
+        {
+            "flavor": "sklearn",
+            "kind": "neural_net",
+            "hyperparams": {
+                "hidden_layer_sizes": [100],
+                "solver": "adam",
+                "alpha": 0.0001,  # l2 regularization
+                "batch_size": "auto",
+                "learning_rate_init": 0.3,
+                "max_iter": 200,  # no. of epochs
+            },
+        },
     ],
 }
 
@@ -60,6 +72,7 @@ models = {
     "linear": ElasticNet,
     "decision_tree": DecisionTreeRegressor,
     "boosted_tree": XGBRegressor,
+    "neural_net": MLPRegressor,
 }
 
 # MLflow model flavor loggers
