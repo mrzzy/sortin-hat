@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split, cross_validate
 from sklearn.pipeline import Pipeline
 
 from prepare import load_dataset, segment_dataset
-from params import params, hydrate
+from params import params, hydrate, model_loggers
 
 
 if __name__ == "__main__":
@@ -75,13 +75,17 @@ if __name__ == "__main__":
 
         # train all model / subject combinations
         components = hydrate(params)
-        for model in components["models"]:
+        for model, model_params in zip(components["models"], params["models"]):
             with ml.start_run(experiment_id=experiment.experiment_id) as run:
+                # log training parameters to mlflow
+                for param in ["imputer", "scaler"]:
+                    ml.log_param(param, params[param])
+                ml.log_params(model_params)
+
                 # tag run with dataset segment & log model training / evaluation run parameters
                 ml.set_tags(
                     {"level": f"S{level}", "subject": subject, "model": model["kind"]}
                 )
-                ml.log_params(params)
                 # hold out a test set for to faciliate unbiased model evaluation later
                 (
                     train_features,
@@ -102,8 +106,12 @@ if __name__ == "__main__":
                         ("model", model["model"]),
                     ],
                 )
+                pipeline.fit(train_features, train_targets)
+
                 # save trained model to mlflow
-                model["logger"](pipeline, model["flavor"])
+                model_loggers["sklearn"](pipeline["imputer"], "imputer")
+                model_loggers["sklearn"](pipeline["scaler"], "scaler")
+                model["logger"](pipeline["model"], model["flavor"])
 
                 # evaluate model performance with k fold cross validation
                 metrics_df = pd.DataFrame(

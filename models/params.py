@@ -10,7 +10,7 @@ from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.linear_model import ElasticNet
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-
+from xgboost import XGBRegressor
 
 params = {
     "imputer": "knn",
@@ -34,6 +34,19 @@ params = {
                 "min_samples_leaf": 1,
             },
         },
+        {
+            "flavor": "xgboost",
+            "kind": "boosted_tree",
+            "hyperparams": {
+                "n_estimators": 100,
+                "max_depth": 6,
+                "learning_rate": 0.3,
+                "subsample": 1,
+                "tree_method": "hist",
+                "reg_lambda": 1,  # l2 regularization
+                "reg_alpha": 0,  # l2 regularization
+            },
+        }
     ],
 }
 
@@ -44,13 +57,15 @@ scalers = {"std": StandardScaler(), "minmax": MinMaxScaler()}
 
 # Model Selection
 models = {
-    "lr_elasticnet": ElasticNet,
+    "linear": ElasticNet,
     "decision_tree": DecisionTreeRegressor,
+    "boosted_tree": XGBRegressor,
 }
 
 # MLflow model flavor loggers
 model_loggers = {
     "sklearn": mlflow.sklearn.log_model,
+    "xgboost": mlflow.xgboost.log_model,
 }
 
 
