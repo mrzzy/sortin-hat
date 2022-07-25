@@ -10,6 +10,7 @@ from sklearn.linear_model import ElasticNet
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.svm import SVR
 from xgboost import XGBRegressor
 
 params = {
@@ -59,6 +60,15 @@ params = {
                 "max_iter": 200,  # no. of epochs
             },
         },
+        {
+            "flavor": "sklearn",
+            "kind": "svm",
+            "hyperparams": {
+                "kernel": "rbf",
+                "gamma": "scale",
+                "C": 1.0,
+            }
+        },
     ],
 }
 
@@ -73,6 +83,7 @@ models = {
     "decision_tree": DecisionTreeRegressor,
     "boosted_tree": XGBRegressor,
     "neural_net": MLPRegressor,
+    "svm": SVR,
 }
 
 # MLflow model flavor loggers
