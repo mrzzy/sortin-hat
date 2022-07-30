@@ -139,4 +139,7 @@ if __name__ == "__main__":
                 )
 
                 ml.log_metrics(metrics_df.to_dict())
-                l.info(f"Trained Model with metrics: \n{metrics_df}")
+                l.info(
+                    f"Trained S{level} {subject} {model['kind']} model with"
+                    f"metrics: \n{metrics_df}"
+                )
