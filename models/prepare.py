@@ -5,7 +5,7 @@
 #
 
 from pathlib import Path
-from typing import List, cast
+from typing import Iterable, List, Tuple, cast
 import numpy as np
 import pandas as pd
 from sklearn.base import re
@@ -54,7 +54,7 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
     Suffix subject columns in the given 'Data Extraction' dataframe with the
     secondary school level the subject was taken.
 
-    For example: English columns will be suffixed: "English S1", "English S2"
+    For example: English columns will be suffixed: "English [S1]", "English [S2]"
     to signify that the subject was taken in Secondary 1 & 2 respectively.
 
     Infers the level the subject taken from the 'YYYY Results' columns in the
@@ -78,8 +78,14 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
         int(match.group("year_result")) for match in year_matches if match is not None
     ]
     # calculate secondary level of the student when the subject was taken
+    grad_level = 4
     level_map = {
-        year_result: f"S{year - year_result + 1}" for year_result in year_results
+        # since year of cohort (year) is also the student's graduation year,
+        # we can calculate the no. years till graduation by subtracting (year - year_result).
+        # using this offset we can determine the secondary level of study the year
+        # the result was recorded.
+        year_result: f"S{grad_level - (year - year_result)}"
+        for year_result in year_results
     }
 
     # Determine the subjects taken by secondary level
@@ -112,7 +118,7 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
             return match.group("subject")
 
     rename_map = {
-        col: f"{strip_digit(col)} {level_map[year_result]}"
+        col: f"{strip_digit(col)} [{level_map[year_result]}]"
         for year_result in year_results
         for col in year_columns[year_result]
     }
@@ -285,7 +291,6 @@ def load_dataset(
     ]
 
     # read data files as dataframes
-    # TODO(mrzzy): read with static dtypes instead of autodetect to gut ram use
     extract_dfs = [pd.read_excel(str(p)) for p in extract_paths]
     # use second row as a header for p6 screening data
     p6_dfs = [pd.read_excel(str(p), header=1) for p in p6_paths]
@@ -307,3 +312,40 @@ def load_dataset(
     dataset_df = df.drop(columns=["Serial number"])
 
     return dataset_df
+
+
+def segment_dataset(
+    df: pd.DataFrame,
+) -> Iterable[Tuple[int, str, pd.DataFrame, pd.Series]]:
+    """Segments the given dataset into features & targets for training models to predict each subject & level.
+
+    Segments the dataset to input features & output targets for training
+    models to predict subjects by secondary school level (S1-S4).
+
+    Args:
+        df: Pandas dataframe of the dataset to segment.
+    Returns:
+        Generator producing (level, subject, features, labels) for each subject by level.
+    """
+    grad_level = 4
+    for level in range(1, grad_level + 1):
+        future_levels = [f"[S{l}]" for l in range(level, grad_level + 1)]
+
+        for subject in [col for col in df.columns if f"[S{level}]" in col]:
+            # drop rows with NAN on target subject scores
+            subject_df = df[~df[subject].isna()]
+
+            # drop subjects taken in future levels to prevent time leakage
+            # in input features
+            features_df = subject_df[
+                [
+                    col
+                    for col in df.columns
+                    if not any([l in col for l in future_levels])
+                ]
+            ]
+
+            # strip level suffix from subject name
+            subject_name = cast(str, subject.replace(f"[S{level}]", "").rstrip())
+
+            yield (level, subject_name, features_df, subject_df[subject])
