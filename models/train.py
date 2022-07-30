@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "mlflow_url",
         type=str,
-        help="MLFlow URL to output train ML model, hyperparameters & metrics to.",
+        help="Path or MLFlow URL to output train ML model, hyperparameters & metrics to.",
         default=ml.get_tracking_uri(),
     )
     parser.add_argument(
