@@ -67,7 +67,7 @@ params = {
                 "kernel": "rbf",
                 "gamma": "scale",
                 "C": 1.0,
-            }
+            },
         },
     ],
 }

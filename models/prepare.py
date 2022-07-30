@@ -80,7 +80,7 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
     # calculate secondary level of the student when the subject was taken
     grad_level = 4
     level_map = {
-        year_result: f"S{grad_level - (year - year_result)}" 
+        year_result: f"S{grad_level - (year - year_result)}"
         for year_result in year_results
     }
 

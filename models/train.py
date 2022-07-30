@@ -114,16 +114,29 @@ if __name__ == "__main__":
                 model["logger"](pipeline["model"], model["flavor"])
 
                 # evaluate model performance with k fold cross validation
-                metrics_df = pd.DataFrame(
-                    cross_validate(
-                        pipeline,
-                        train_features,
-                        train_targets,
-                        scoring=["neg_root_mean_squared_error", "r2"],
-                        return_train_score=True,
-                        cv=5,
-                        n_jobs=-1,
+                metrics = ["neg_root_mean_squared_error", "r2"]
+                metrics_df = (
+                    pd.DataFrame(
+                        cross_validate(
+                            pipeline,
+                            train_features,
+                            train_targets,
+                            scoring=metrics,
+                            return_train_score=True,
+                            cv=5,
+                            n_jobs=-1,
+                        )
                     )
-                ).mean()
+                    .mean()
+                    .rename(
+                        {
+                            # rename metrics to 'val_' show that their evaluate on
+                            # the validation set
+                            f"test_{metric}": f"val_{metric}"
+                            for metric in metrics
+                        }
+                    )
+                )
+
                 ml.log_metrics(metrics_df.to_dict())
                 l.info(f"Trained Model with metrics: \n{metrics_df}")
