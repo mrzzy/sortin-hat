@@ -45,7 +45,7 @@ params = {
                 "subsample": 1,
                 "tree_method": "hist",
                 "reg_lambda": 1,  # l2 regularization
-                "reg_alpha": 0,  # l2 regularization
+                "reg_alpha": 0,  # l1 regularization
             },
         },
         {
