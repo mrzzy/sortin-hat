@@ -80,6 +80,10 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
     # calculate secondary level of the student when the subject was taken
     grad_level = 4
     level_map = {
+        # since year of cohort (year) is also the student's graduation year,
+        # we can calculate the no. years till graduation by subtracting (year - year_result).
+        # using this offset we can determine the secondary level of study the year
+        # the result was recorded.
         year_result: f"S{grad_level - (year - year_result)}"
         for year_result in year_results
     }
