@@ -86,7 +86,7 @@ if __name__ == "__main__":
                 ml.set_tags(
                     {"level": f"S{level}", "subject": subject, "model": model["kind"]}
                 )
-                # hold out a test set for to faciliate unbiased model evaluation later
+                # hold out a test set for to facilitate unbiased model evaluation later
                 (
                     train_features,
                     test_features,
