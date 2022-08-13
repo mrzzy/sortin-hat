@@ -53,6 +53,10 @@ resource "google_container_cluster" "main" {
   enable_autopilot = true
   location         = local.region
 
+  # hotfix: https://github.com/hashicorp/terraform-provider-google/issues/10782
+  ip_allocation_policy {
+  }
+
   private_cluster_config {
     # disable public internet access to worker nodes
     enable_private_nodes    = true
