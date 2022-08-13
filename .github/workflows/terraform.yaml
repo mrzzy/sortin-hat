@@ -10,9 +10,12 @@ defaults:
   run:
     working-directory: infra/terraform
 jobs:
-  plan-terraform:
-    name: "Lint & Plan Terraform"
+  terraform:
+    name: "Lint, Plan & Apply Terraform"
     runs-on: "ubuntu-20.04"
+    env:
+      # google provider reads service account key in plaintext via env var
+      GOOGLE_CREDENTIALS: "${{ secrets.GCP_TF_SERVICE_ACCOUNT_KEY }}"
     steps:
       - uses: actions/checkout@v3
       - name: "Setup Terraform CLI"
@@ -27,21 +30,5 @@ jobs:
         run: terraform validate -no-color
       - name: "Terraform Plan"
         run: terraform plan
-
-  apply-terraform:
-    name: "Apply Terraform to GCP"
-    needs: [plan-terraform]
-    runs-on: "ubuntu-20.04"
-    steps:
-      - uses: actions/checkout@v3
-      - name: "Setup Terraform CLI"
-        uses: hashicorp/setup-terraform@v1
-        with:
-          terraform_version: 1.2.6
-      - name: "Terraform Init"
-        run: terraform init
       - name: "Terraform Apply"
-        env:
-          # google provider reads service account key in plaintext via env var
-          GOOGLE_CREDENTIALS: "${{ secrets.GCP_TF_SERVICE_ACCOUNT_KEY }}"
         run: terraform apply -auto-approve=true
