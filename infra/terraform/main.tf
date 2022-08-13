@@ -5,8 +5,7 @@
 
 locals {
   project_id = "sss-sortin-hat"
-  # TODO(mrzzy): merge with region
-  gcs_location = "ASIA-SOUTHEAST1" # Singapore
+  region     = "asia-southeast1" # Google's SG, Jurong West datacenter
 }
 terraform {
   required_version = "~>1.2.6"
@@ -24,14 +23,14 @@ terraform {
 
 provider "google" {
   project = local.project_id
-  region  = "asia-southeast1" # Google's SG, Jurong West datacenter
+  region  = local.region
 }
 
 # GCS buckets
 # store terraform state
 resource "google_storage_bucket" "tf_state" {
   name     = "${local.project_id}-terraform-state"
-  location = local.gcs_location
+  location = local.region
 
   lifecycle {
     prevent_destroy = true
@@ -40,18 +39,19 @@ resource "google_storage_bucket" "tf_state" {
 # raw data source files
 resource "google_storage_bucket" "raw" {
   name     = "${local.project_id}-raw"
-  location = local.gcs_location
+  location = local.region
 }
 # processed datasets for training ML models
 resource "google_storage_bucket" "datasets" {
   name     = "${local.project_id}-datasets"
-  location = local.gcs_location
+  location = local.region
 }
 
 # GKE K8s Cluster
 resource "google_container_cluster" "main" {
   name             = "main"
   enable_autopilot = true
+  location         = local.region
 
   private_cluster_config {
     # disable public internet access to worker nodes
