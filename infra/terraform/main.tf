@@ -4,7 +4,8 @@
 #
 
 locals {
-  project_id = "sss-sortin-hat"
+  project_id   = "sss-sortin-hat"
+  gcs_location = "ASIA-SOUTHEAST1" # Singapore
 }
 terraform {
   required_version = "~>1.2.6"
@@ -25,12 +26,23 @@ provider "google" {
   region  = "asia-southeast1" # Google's SG, Jurong West datacenter
 }
 
-# GCS bucket to as terraform state backend
+# GCS buckets
+# store terraform state
 resource "google_storage_bucket" "tf_state" {
   name     = "${local.project_id}-terraform-state"
-  location = "ASIA-SOUTHEAST1" # Singapore
+  location = local.gcs_location
 
   lifecycle {
     prevent_destroy = true
   }
+}
+# raw data source files
+resource "google_storage_bucket" "raw" {
+  name     = "${local.project_id}-raw"
+  location = local.gcs_location
+}
+# processed datasets for training ML models
+resource "google_storage_bucket" "datasets" {
+  name     = "${local.project_id}-datasets"
+  location = local.gcs_location
 }
