@@ -34,6 +34,8 @@ repos:
     args:
       - --args=-recursive -no-color
   - id: terraform_validate
+    args:
+      - --args=-no-color
 
 # lint Python source code
 - repo: https://github.com/psf/black
