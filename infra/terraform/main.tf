@@ -4,7 +4,8 @@
 #
 
 locals {
-  project_id   = "sss-sortin-hat"
+  project_id = "sss-sortin-hat"
+  # TODO(mrzzy): merge with region
   gcs_location = "ASIA-SOUTHEAST1" # Singapore
 }
 terraform {
@@ -45,4 +46,16 @@ resource "google_storage_bucket" "raw" {
 resource "google_storage_bucket" "datasets" {
   name     = "${local.project_id}-datasets"
   location = local.gcs_location
+}
+
+# GKE K8s Cluster
+resource "google_container_cluster" "main" {
+  name             = "main"
+  enable_autopilot = true
+
+  private_cluster_config {
+    # disable public internet access to worker nodes
+    enable_private_nodes    = true
+    enable_private_endpoint = false # allow public access to k8s endpoint
+  }
 }
