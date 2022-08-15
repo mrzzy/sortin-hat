@@ -46,6 +46,11 @@ resource "google_storage_bucket" "datasets" {
   name     = "${local.project_id}-datasets"
   location = local.region
 }
+# trained ML model artifacts
+resource "google_storage_bucket" "models" {
+  name     = "${local.project_id}-models"
+  location = local.region
+}
 
 # GKE K8s Cluster
 resource "google_container_cluster" "main" {
