@@ -298,7 +298,6 @@ postgresql:
 
   # obtain password for postgresql user from airflow k8s secret
   existingSecret: airflow
-  existingSecretKey: POSTGRESQL_PASSWORD
 
 ###################################
 ## DATABASE | External Database
