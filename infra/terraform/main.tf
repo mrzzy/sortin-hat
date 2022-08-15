@@ -63,8 +63,6 @@ resource "google_container_cluster" "main" {
   }
 
   private_cluster_config {
-    # disable public internet access to worker nodes
-    enable_private_nodes    = true
     enable_private_endpoint = false # allow public access to k8s endpoint
   }
 }
