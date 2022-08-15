@@ -11,5 +11,6 @@ secretGenerator:
 helmCharts:
   - repo: https://airflow-helm.github.io/charts
     name: airflow
+    releaseName: airflow
     version: 8.6.1
     valuesFile: airflow/values.yaml

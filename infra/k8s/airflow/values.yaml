@@ -19,9 +19,6 @@ airflow:
   ## the airflow executor type to use
   executor: KubernetesExecutor
 
-  ## [WARNING] change from default value to ensure security
-  webserverSecretKey: "THIS IS UNSAFE!"
-
   ## environment variables for airflow configs
   ## [FAQ] https://github.com/airflow-helm/charts/blob/main/charts/airflow/docs/faq/configuration/airflow-configs.md
   config:
@@ -76,8 +73,8 @@ airflow:
     - name: AIRFLOW__WEBSERVER__SECRET_KEY
       valueFrom:
         secretKeyRef:
-          name: airflow-webserver-secret-key
-          key: value
+          name: airflow
+          key: AIRFLOW__WEBSERVER__SECRET_KEY
 
   ## extra VolumeMounts for the airflow Pods
   ## [FAQ] https://github.com/airflow-helm/charts/blob/main/charts/airflow/docs/faq/kubernetes/mount-persistent-volumes.md
