@@ -271,7 +271,7 @@ extraManifests: []
 pgbouncer:
   ## if the pgbouncer Deployment is created
   ## [FAQ] https://github.com/airflow-helm/charts/blob/main/charts/airflow/docs/faq/database/pgbouncer.md
-  enabled: true
+  enabled: false
 
   ## resource requests/limits for the pgbouncer Pods
   ## [SPEC] https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#resourcerequirements-v1-core
