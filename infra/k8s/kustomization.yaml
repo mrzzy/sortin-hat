@@ -9,8 +9,9 @@ secretGenerator:
   - name: airflow
     env: .secret.env
 helmCharts:
-  - repo: https://airflow-helm.github.io/charts
+  - repo: https://airflow.apache.org
     name: airflow
+    version: 1.6.0
     releaseName: airflow
-    version: 8.6.1
-    valuesFile: airflow/values.yaml
+    valuesInline:
+      executor: KubernetesExecutor
