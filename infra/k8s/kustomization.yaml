@@ -1,0 +1,15 @@
+#
+# sortin-hat
+# K8s Deployment
+#
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+secretGenerator:
+  - name: airflow
+    env: .secret.env
+helmCharts:
+  - repo: https://airflow-helm.github.io/charts
+    name: airflow
+    version: 8.6.1
+    valuesFile: airflow/values.yaml
