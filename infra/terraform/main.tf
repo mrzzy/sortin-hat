@@ -5,7 +5,8 @@
 
 locals {
   project_id = "sss-sortin-hat"
-  region     = "asia-southeast1" # Google's SG, Jurong West datacenter
+  # Google's SG, Jurong West datacenter
+  region = "asia-southeast1"
 }
 terraform {
   required_version = "~>1.2.6"
@@ -54,15 +55,28 @@ resource "google_storage_bucket" "models" {
 
 # GKE K8s Cluster
 resource "google_container_cluster" "main" {
-  name             = "main"
-  enable_autopilot = true
-  location         = local.region
+  name = "main"
+  # deploy zonal cluster as regional cluster will spin up 1 node per zone (3)
+  # which is too much for our requirements
+  location = "${local.region}-c"
 
-  # hotfix: https://github.com/hashicorp/terraform-provider-google/issues/10782
-  ip_allocation_policy {
-  }
+  # manage node pools separately from the cluster: delete default node pool.
+  remove_default_node_pool = true
+  initial_node_count       = 1
+}
+# node pool for running long-running support infrastructure (ie. Airflow, MLFlow)
+resource "google_service_account" "k8s_node" {
+  account_id   = "k8s-cluster-node"
+  display_name = "Service account used by GKE 'main' K8s cluster worker nodes"
+}
+resource "google_container_node_pool" "infra" {
+  name       = "support-infra"
+  cluster    = google_container_cluster.main.id
+  node_count = 1
 
-  private_cluster_config {
-    enable_private_endpoint = false # allow public access to k8s endpoint
+  node_config {
+    machine_type    = "e2-medium"
+    service_account = google_service_account.k8s_node.email
+    disk_size_gb    = 15
   }
 }

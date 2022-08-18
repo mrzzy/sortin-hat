@@ -243,3 +243,12 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# dotenv files with k8s secret values
+.secret.env
+
+# ignore helm charts dowlowded by kustomize
+charts/
+
+# kubectl credential
+/.kubeconfig

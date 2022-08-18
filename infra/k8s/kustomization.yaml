@@ -1,0 +1,18 @@
+#
+# sortin-hat
+# K8s Deployment
+#
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+secretGenerator:
+  - name: airflow
+    env: .secret.env
+helmCharts:
+  # Airflow - Workflow Orchestration
+  - repo: https://airflow.apache.org
+    name: airflow
+    version: 1.6.0
+    releaseName: airflow
+    valuesInline:
+      executor: KubernetesExecutor
