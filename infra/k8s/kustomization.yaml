@@ -9,6 +9,7 @@ secretGenerator:
   - name: airflow
     env: .secret.env
 helmCharts:
+  # Airflow - Workflow Orchestration
   - repo: https://airflow.apache.org
     name: airflow
     version: 1.6.0
