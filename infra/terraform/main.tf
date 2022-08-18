@@ -61,3 +61,19 @@ resource "google_container_cluster" "main" {
   remove_default_node_pool = true
   initial_node_count       = 1
 }
+# node pool for running long-running support infrastructure (ie. Airflow, MLFlow)
+resource "google_service_account" "k8s_node" {
+  account_id   = "k8s-cluster-node"
+  display_name = "Service account used by GKE 'main' K8s cluster worker nodes"
+}
+resource "google_container_node_pool" "infra" {
+  name       = "support-infra"
+  cluster    = google_container_cluster.main.id
+  node_count = 1
+
+  node_config {
+    machine_type    = "e2-small"
+    service_account = google_service_account.k8s_node.email
+    disk_size_gb    = 15
+  }
+}
