@@ -54,15 +54,10 @@ resource "google_storage_bucket" "models" {
 
 # GKE K8s Cluster
 resource "google_container_cluster" "main" {
-  name             = "main"
-  enable_autopilot = true
-  location         = local.region
+  name     = "main"
+  location = local.region
 
-  # hotfix: https://github.com/hashicorp/terraform-provider-google/issues/10782
-  ip_allocation_policy {
-  }
-
-  private_cluster_config {
-    enable_private_endpoint = false # allow public access to k8s endpoint
-  }
+  # manage node pools separately from the cluster: delete default node pool.
+  remove_default_node_pool = true
+  initial_node_count       = 1
 }
