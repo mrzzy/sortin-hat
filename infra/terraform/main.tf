@@ -5,7 +5,8 @@
 
 locals {
   project_id = "sss-sortin-hat"
-  region     = "asia-southeast1" # Google's SG, Jurong West datacenter
+  # Google's SG, Jurong West datacenter
+  region = "asia-southeast1"
 }
 terraform {
   required_version = "~>1.2.6"
@@ -54,8 +55,10 @@ resource "google_storage_bucket" "models" {
 
 # GKE K8s Cluster
 resource "google_container_cluster" "main" {
-  name     = "main"
-  location = local.region
+  name = "main"
+  # deploy zonal cluster as regional cluster will spin up 1 node per zone (3)
+  # which is too much for our requirements
+  location = "${local.region}-c"
 
   # manage node pools separately from the cluster: delete default node pool.
   remove_default_node_pool = true
