@@ -7,6 +7,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 helmCharts:
+  # Postgres - Shared Database for Airflow & MLFlow
+  - repo: https://charts.bitnami.com/bitnami
+    name: postgresql
+    releaseName: "db"
   # Airflow - Workflow Orchestration
   - repo: https://airflow.apache.org
     name: airflow
@@ -14,3 +18,7 @@ helmCharts:
     releaseName: airflow
     valuesInline:
       executor: KubernetesExecutor
+      # depend onpostgresql database deployed separately using db connection
+      # string in '<RELEASE>-airflow-metadata' secret
+      postgresql:
+        enabled: false

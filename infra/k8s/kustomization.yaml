@@ -2,12 +2,20 @@
 # sortin-hat
 # K8s Deployment
 # GKE Kustomization
+#
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ./base
 secretGenerator:
-  - behavior: replace
-    name: airflow-postgresql
+  - behavior: merge
+    name: db-postgresql
     env: secrets/.postgres.env
+  - behavior: merge
+    name: airflow-airflow-metadata
+    env: secrets/.airflow.env
+commonLabels:
+  app.kubernetes.io/part-of: sortin-hat
+  app.kubernetes.io/component: ml-pipeline
+  app.kubernetes.io/managed-by: kustomize
