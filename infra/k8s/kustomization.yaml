@@ -1,18 +1,13 @@
 #
 # sortin-hat
 # K8s Deployment
-#
+# GKE Kustomization
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+resources:
+  - ./base
 secretGenerator:
-  - name: airflow
-    env: .secret.env
-helmCharts:
-  # Airflow - Workflow Orchestration
-  - repo: https://airflow.apache.org
-    name: airflow
-    version: 1.6.0
-    releaseName: airflow
-    valuesInline:
-      executor: KubernetesExecutor
+  - behavior: replace
+    name: airflow-postgresql
+    env: secrets/.postgres.env

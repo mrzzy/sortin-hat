@@ -1,0 +1,16 @@
+#
+# sortin-hat
+# K8s Deployment
+# Kustomize Base
+#
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  # Airflow - Workflow Orchestration
+  - repo: https://airflow.apache.org
+    name: airflow
+    version: 1.6.0
+    releaseName: airflow
+    valuesInline:
+      executor: KubernetesExecutor
