@@ -245,7 +245,7 @@ override.tf.json
 terraform.rc
 
 # dotenv files with k8s secret values
-.secret.env
+.*.env
 
 # ignore helm charts dowlowded by kustomize
 charts/
