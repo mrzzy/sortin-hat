@@ -13,11 +13,12 @@ helmCharts:
     releaseName: ml-pipeline
     valuesInline:
       primary:
-        # initdb: create database for Airflow deployment
+        # initdb: create database for Airflow & MLFlow deployments
         initdb:
             scripts:
               create_db.sql: |
                 CREATE DATABASE airflow;
+                CREATE DATABASE mlflow;
   # Airflow - Workflow Orchestration
   - repo: https://airflow.apache.org
     name: airflow
@@ -29,3 +30,19 @@ helmCharts:
       # in '<RELEASE>-airflow-metadata' secret
       postgresql:
         enabled: false
+  # MLFlow - Experiment Tracking
+  - repo: https://community-charts.github.io/helm-charts
+    name: mlflow
+    version: 0.7.1
+    releaseName: ml-pipeline
+    valuesInline:
+      backendStore:
+        databaseMigration: true
+        postgres:
+          enabled: true
+          host: "ml-pipeline-postgresql"
+          port: 5432
+          database: "mlflow"
+          user: "postgres"
+          # placeholder needed as chart requires password to be nonempty to inflate.
+          password: "<placeholder>"

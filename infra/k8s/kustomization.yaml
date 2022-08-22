@@ -15,6 +15,9 @@ secretGenerator:
   - behavior: merge
     name: ml-pipeline-airflow-metadata
     env: secrets/.airflow.env
+  - behavior: merge
+    name: ml-pipeline-mlflow-env-secret
+    env: secrets/.mlflow.env
 commonLabels:
   app.kubernetes.io/part-of: sortin-hat
   app.kubernetes.io/component: ml-pipeline
