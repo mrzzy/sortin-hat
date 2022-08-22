@@ -10,10 +10,10 @@ resources:
   - ./base
 secretGenerator:
   - behavior: merge
-    name: db-postgresql
+    name: ml-pipeline-postgresql
     env: secrets/.postgres.env
   - behavior: merge
-    name: airflow-airflow-metadata
+    name: ml-pipeline-airflow-metadata
     env: secrets/.airflow.env
 commonLabels:
   app.kubernetes.io/part-of: sortin-hat

@@ -10,12 +10,12 @@ helmCharts:
   # Postgres - Shared Database for Airflow & MLFlow
   - repo: https://charts.bitnami.com/bitnami
     name: postgresql
-    releaseName: "db"
+    releaseName: ml-pipeline
   # Airflow - Workflow Orchestration
   - repo: https://airflow.apache.org
     name: airflow
     version: 1.6.0
-    releaseName: airflow
+    releaseName: ml-pipeline
     valuesInline:
       executor: KubernetesExecutor
       # depend onpostgresql database deployed separately using db connection
