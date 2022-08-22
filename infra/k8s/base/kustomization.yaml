@@ -11,6 +11,13 @@ helmCharts:
   - repo: https://charts.bitnami.com/bitnami
     name: postgresql
     releaseName: ml-pipeline
+    valuesInline:
+      primary:
+        # initdb: create database for Airflow deployment
+        initdb:
+            scripts:
+              create_db.sql: |
+                CREATE DATABASE airflow;
   # Airflow - Workflow Orchestration
   - repo: https://airflow.apache.org
     name: airflow
@@ -18,7 +25,7 @@ helmCharts:
     releaseName: ml-pipeline
     valuesInline:
       executor: KubernetesExecutor
-      # depend onpostgresql database deployed separately using db connection
-      # string in '<RELEASE>-airflow-metadata' secret
+      # use postgresql database deployed separately via db connection string
+      # in '<RELEASE>-airflow-metadata' secret
       postgresql:
         enabled: false
