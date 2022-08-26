@@ -7,6 +7,16 @@ locals {
   project_id = "sss-sortin-hat"
   # Google's SG, Jurong West datacenter
   region = "asia-southeast1"
+
+  # name of the GCS buckets to create
+  buckets = toset([for suffix in [
+    # raw, unprocessed source data files
+    "raw-data",
+    # processed datasets for training ML models
+    "datasets",
+    # trained ML model artifacts
+    "models"
+  ] : "${local.project_id}-${suffix}"])
 }
 terraform {
   required_version = "~>1.2.6"
@@ -37,26 +47,18 @@ resource "google_storage_bucket" "tf_state" {
     prevent_destroy = true
   }
 }
-# raw, unprocessed source data files
-resource "google_storage_bucket" "raw-data" {
-  name     = "${local.project_id}-raw-data"
-  location = local.region
-}
-# processed datasets for training ML models
-resource "google_storage_bucket" "datasets" {
-  name     = "${local.project_id}-datasets"
-  location = local.region
-}
-# trained ML model artifacts
-resource "google_storage_bucket" "models" {
-  name     = "${local.project_id}-models"
+
+
+resource "google_storage_bucket" "buckets" {
+  for_each = local.buckets
+  name     = each.key
   location = local.region
 }
 
 # GKE K8s Cluster
 resource "google_container_cluster" "main" {
   name = "main"
-  # deploy zonal cluster as regional cluster will spin up 1 node per zone (3)
+  # deploy a zonal cluster as regional cluster will spin up 1 node per zone (3)
   # which is too much for our requirements
   location = "${local.region}-c"
 
