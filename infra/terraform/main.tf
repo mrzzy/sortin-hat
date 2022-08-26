@@ -37,9 +37,9 @@ resource "google_storage_bucket" "tf_state" {
     prevent_destroy = true
   }
 }
-# raw data source files
-resource "google_storage_bucket" "raw" {
-  name     = "${local.project_id}-raw"
+# raw, unprocessed source data files
+resource "google_storage_bucket" "raw-data" {
+  name     = "${local.project_id}-raw-data"
   location = local.region
 }
 # processed datasets for training ML models
