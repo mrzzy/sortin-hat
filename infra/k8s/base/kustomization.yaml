@@ -46,3 +46,7 @@ helmCharts:
           user: "postgres"
           # placeholder needed as chart requires password to be nonempty to inflate.
           password: "<placeholder>"
+      artifactRoot:
+        gcs:
+          bucket: sss-sortin-hat-models
+          enabled: true
