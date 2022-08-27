@@ -23,7 +23,7 @@ helmCharts:
   - repo: https://airflow.apache.org
     name: airflow
     version: 1.6.0
-    releaseName: ml-pipeline
+    releaseName: ml-pipeline-airflow
     valuesInline:
       executor: KubernetesExecutor
       # use postgresql database deployed separately via db connection string

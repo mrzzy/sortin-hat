@@ -9,12 +9,11 @@ kind: Kustomization
 resources:
   - ./base
 secretGenerator:
-  # TODO(mrzzy): remove duplication of postgres credentials between secrets
   - behavior: merge
     name: ml-pipeline-postgresql
     env: secrets/.postgres.env
   - behavior: merge
-    name: ml-pipeline-airflow-metadata
+    name: ml-pipeline-airflow-airflow-metadata
     env: secrets/.airflow.env
   - behavior: merge
     name: ml-pipeline-mlflow-env-secret
