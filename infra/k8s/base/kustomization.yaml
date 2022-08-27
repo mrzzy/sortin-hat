@@ -1,0 +1,52 @@
+#
+# sortin-hat
+# K8s Deployment
+# Kustomize Base
+#
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  # Postgres - Shared Database for Airflow & MLFlow
+  - repo: https://charts.bitnami.com/bitnami
+    name: postgresql
+    releaseName: ml-pipeline
+    valuesInline:
+      primary:
+        # initdb: create database for Airflow & MLFlow deployments
+        initdb:
+            scripts:
+              create_db.sql: |
+                CREATE DATABASE airflow;
+                CREATE DATABASE mlflow;
+  # Airflow - Workflow Orchestration
+  - repo: https://airflow.apache.org
+    name: airflow
+    version: 1.6.0
+    releaseName: ml-pipeline-airflow
+    valuesInline:
+      executor: KubernetesExecutor
+      # use postgresql database deployed separately via db connection string
+      # in '<RELEASE>-airflow-metadata' secret
+      postgresql:
+        enabled: false
+  # MLFlow - Experiment Tracking
+  - repo: https://community-charts.github.io/helm-charts
+    name: mlflow
+    version: 0.7.1
+    releaseName: ml-pipeline
+    valuesInline:
+      backendStore:
+        databaseMigration: true
+        postgres:
+          enabled: true
+          host: "ml-pipeline-postgresql"
+          port: 5432
+          database: "mlflow"
+          user: "postgres"
+          # placeholder needed as chart requires password to be nonempty to inflate.
+          password: "<placeholder>"
+      artifactRoot:
+        gcs:
+          bucket: sss-sortin-hat-models
+          enabled: true

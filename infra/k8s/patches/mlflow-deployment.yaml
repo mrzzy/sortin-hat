@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-pipeline-mlflow
+spec:
+  template:
+    spec:
+      containers:
+      - name: mlflow
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /mnt/gcp_service_account/private-key
+        volumeMounts:
+          - mountPath: /mnt/gcp_service_account
+            name: gcp-key
+            readOnly: true
+      volumes:
+      - name: gcp-key
+        secret:
+          secretName: ml-pipeline-gcp-service-account
