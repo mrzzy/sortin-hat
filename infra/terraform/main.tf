@@ -96,7 +96,7 @@ resource "kubernetes_secret_v1" "pipeline_svc_acc_key" {
 
   }
   data = {
-    "private-key" = google_service_account_key.pipeline.private_key
+    "private-key" = base64decode(google_service_account_key.pipeline.private_key)
   }
 }
 
