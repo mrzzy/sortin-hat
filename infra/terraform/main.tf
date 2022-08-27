@@ -41,12 +41,14 @@ provider "google" {
   project = local.project_id
   region  = local.region
 }
-provider "kubernetes" {
-  host = "https://${google_container_cluster.main.endpoint}"
 
-  client_certificate     = base64decode(google_container_cluster.main.master_auth.0.client_certificate)
-  client_key             = base64decode(google_container_cluster.main.master_auth.0.client_key)
+# fetch access token using Google Application Default credentials to authenticate
+# terraform's kubernetes provider when applying resources.
+data "google_client_config" "default" {}
+provider "kubernetes" {
+  host                   = "https://${google_container_cluster.main.endpoint}"
   cluster_ca_certificate = base64decode(google_container_cluster.main.master_auth.0.cluster_ca_certificate)
+  token                  = data.google_client_config.default.access_token
 }
 
 # GCS buckets
@@ -83,7 +85,7 @@ resource "google_storage_bucket_iam_member" "allow_k8s" {
 resource "google_service_account_key" "pipeline" {
   service_account_id = google_service_account.pipeline.id
 }
-resource "kubernetes_secret" "pipeline_svc_acc_key" {
+resource "kubernetes_secret_v1" "pipeline_svc_acc_key" {
   metadata {
     name = "ml-pipeline-gcp-service-account"
     labels = {
