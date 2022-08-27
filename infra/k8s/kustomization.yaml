@@ -9,6 +9,7 @@ kind: Kustomization
 resources:
   - ./base
 secretGenerator:
+  # TODO(mrzzy): remove duplication of postgres credentials between secrets
   - behavior: merge
     name: ml-pipeline-postgresql
     env: secrets/.postgres.env
@@ -22,3 +23,5 @@ commonLabels:
   app.kubernetes.io/part-of: sortin-hat
   app.kubernetes.io/component: ml-pipeline
   app.kubernetes.io/managed-by: kustomize
+patches:
+  - patches/mlflow-deployment.yaml
