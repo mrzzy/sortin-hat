@@ -50,3 +50,9 @@ helmCharts:
         gcs:
           bucket: sss-sortin-hat-models
           enabled: true
+resources:
+  # Ray - Distributed Training and Hyperparamter tuning
+  # NOTE: due to https://github.com/ray-project/kuberay/issues/271, deploy CRDs manually:
+  # kubectl create -k "github.com/ray-project/kuberay/manifests/cluster-scope-resources?ref=v0.3.0&timeout=90s"
+  - github.com/ray-project/kuberay/manifests/base?ref=v0.3.0&timeout=90s
+  - ray-cluster.yaml
