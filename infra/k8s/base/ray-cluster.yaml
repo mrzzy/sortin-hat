@@ -7,13 +7,13 @@
 apiVersion: ray.io/v1alpha1
 kind: RayCluster
 metadata:
+  # A unique identifier for the head node and workers of this cluster.
+  name: ml-pipeline-ray
   labels:
     controller-tools.k8s.io: "1.0"
-    # A unique identifier for the head node and workers of this cluster.
-  name: ml-pipeline-ray
 spec:
   rayVersion: '2.0.0'
-  ######################headGroupSpec#################################
+  # Ray Head Workers
   # head group template and specs, (perhaps 'group' is not needed in the name)
   headGroupSpec:
     # Kubernetes Service Type, valid values are 'ClusterIP', 'NodePort' and 'LoadBalancer'
@@ -55,6 +55,7 @@ spec:
         volumes:
           - name: ray-logs
             emptyDir: {}
+  # Ray Cluster Workers
   workerGroupSpecs:
   # the pod replicas in this group typed worker
   - groupName: main
