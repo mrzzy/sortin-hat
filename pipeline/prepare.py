@@ -19,7 +19,7 @@ from extract import (
     get_housing,
 )
 
-# TODO(mrzzy): drop outliers?
+# TODO(mrzzy): drop outliers? currently unused
 def drop_outliers(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
     """Drop outliers identified in the given dataframe from the given columns.
 
@@ -328,6 +328,8 @@ def segment_dataset(
         Generator producing (level, subject, features, labels) for each subject by level.
     """
     grad_level = 4
+
+    # compile features for target prediction level (Secondary 1 -> 4)
     for level in range(1, grad_level + 1):
         future_levels = [f"[S{l}]" for l in range(level, grad_level + 1)]
 
