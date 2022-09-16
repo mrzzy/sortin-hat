@@ -5,13 +5,17 @@
 #
 
 from datetime import timedelta
+from os import path
 from typing import List
 
+import pandas as pd
 from airflow.decorators import dag, task
 from airflow.models.param import Param
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
-from pendulum import date
+from pendulum import DateTime, date
+
+from pipeline.prepare import prepare_extract, prepare_p6
 
 config = {
     "buckets": {
@@ -22,6 +26,7 @@ config = {
         },
         "dataset": {
             "name": "sss-sortin-hat-datasets",
+            "scores_prefix": "scores",
         }
     }
 }
@@ -62,14 +67,45 @@ def pipeline():
 
     """
     @task(
-        task_id="etl_dataset"
+        task_id="clean_dataset"
     )
-    def etl_dataset():
+    def clean_dataset(data_interval_start: DateTime):
         """
-        ### Extract, Transform & Load (ETL) Excel into Parquet files
+        ### Clean Dataset
         Extracts data from the following Excel yearly-partitioned spreadsheets stored
-        on the `bucket.raw_data.name` GCS bucket.
+        on the `bucket.raw_data.name` GCS bucket.  
 
-        Performs transformation to clean the data & exports them as parquet files
-        in then `bucket.dataset.name` GCS bucket.
+        Processes the data to clean it
+        & loads them as parquet files in into the `bucket.datasets.name` GCS bucket
+        as year-partitioned parquet files under the `bucket.datasets.scores_prefix`.
         """
+        raw_data, year = config["buckets"]["raw_data"], data_interval_start.year 
+        gcs = GCSHook()
+
+        # Download data as Excel Spreadsheets
+        # download Sec 4 Cohort sendout spreadsheet
+        s4_path = f"{raw_data['sec4_prefix']}/{year}.xlsx"
+        if not gcs.exists(raw_data["name"], s4_path):
+            raise FileNotFoundError(f"Expected S4 Cohort Excel Spreadsheet to exist: {s4_path}")
+        gcs.download(raw_data["name"], s4_path, f"s4_{year}.xlsx")
+        # download P6 screening spreadsheet if it exists
+        p6_path = f"{raw_data['p6_prefix']}/{year}.xlsx"
+        if gcs.exists(raw_data["name"], p6_path):
+            gcs.download(raw_data["name"], f"p6_{year}.xlsx")
+
+        # Extract & Transform data from spreadsheets to Parquet
+        df = prepare_extract(pd.read_excel(f"s4_{year}.xlsx"), year)
+        # merge in p6 screening data if present
+        if path.exists(f"p6_{year}.xlsx"):
+            p6_df = prepare_p6(pd.read_excel(f"p6_{year}.xlsx"))
+            df = pd.merge(df, p6_df, how="left", on="Serial number")
+        # serial no. column no longer needed post join.
+        df = df.drop(columns=["Serial number"])
+        # write dataframe as parquet files
+        df.to_parquet(f"{year}.parquet")
+
+        # Upload data as parquet files
+        datasets = config["buckets"]["datasets"]
+        gcs.upload(datasets["name"], 
+                   object_name=f"{datasets['scores_prefix']}/{year}.parquet",
+                   filename=f"{year}.parquet")
