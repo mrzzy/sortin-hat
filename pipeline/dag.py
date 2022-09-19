@@ -10,9 +10,11 @@ from typing import Optional
 import pandas as pd
 from airflow.decorators import dag, task
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
-from pendulum import DateTime, date
+from pendulum import datetime
+from pendulum.datetime import DateTime
+from pendulum.tz.timezone import UTC
 
-from pipeline.prepare import prepare_extract, prepare_p6
+from prepare import prepare_extract, prepare_p6
 
 config = {
     "buckets": {
@@ -33,9 +35,8 @@ config = {
     description="Data & ML Pipeline producing Sortin-hat ML models",
 
     # each dag run handles a year-sized data interval from start_date
-    start_date=date(2016, 1, 1),
+    start_date=datetime(2016, 1, 1, tz="Asia/Singapore"),
     schedule_interval="@yearly",
-
 
     # task defaults
     default_args = {
@@ -107,3 +108,4 @@ def pipeline():
                    object_name=f"{datasets['scores_prefix']}/{year}.parquet",
                    filename=f"{year}.parquet")
     clean_dataset()
+dag = pipeline()
