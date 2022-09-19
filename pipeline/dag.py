@@ -4,15 +4,12 @@
 # Airflow DAG
 #
 
-from datetime import timedelta
 from os import path
-from typing import List
+from typing import Optional
 
 import pandas as pd
 from airflow.decorators import dag, task
-from airflow.models.param import Param
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
-from airflow.providers.google.cloud.operators.gcs import GCSListObjectsOperator
 from pendulum import DateTime, date
 
 from pipeline.prepare import prepare_extract, prepare_p6
@@ -69,7 +66,7 @@ def pipeline():
     @task(
         task_id="clean_dataset"
     )
-    def clean_dataset(data_interval_start: DateTime):
+    def clean_dataset(data_interval_start: Optional[DateTime]=None):
         """
         ### Clean Dataset
         Extracts data from the following Excel yearly-partitioned spreadsheets stored
@@ -79,7 +76,7 @@ def pipeline():
         & loads them as parquet files in into the `bucket.datasets.name` GCS bucket
         as year-partitioned parquet files under the `bucket.datasets.scores_prefix`.
         """
-        raw_data, year = config["buckets"]["raw_data"], data_interval_start.year 
+        raw_data, year = config["buckets"]["raw_data"], data_interval_start.year # type: ignore
         gcs = GCSHook()
 
         # Download data as Excel Spreadsheets
@@ -109,3 +106,4 @@ def pipeline():
         gcs.upload(datasets["name"], 
                    object_name=f"{datasets['scores_prefix']}/{year}.parquet",
                    filename=f"{year}.parquet")
+    clean_dataset()
