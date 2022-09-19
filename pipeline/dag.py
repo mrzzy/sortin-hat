@@ -12,7 +12,6 @@ from airflow.decorators import dag, task
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from pendulum import datetime
 from pendulum.datetime import DateTime
-from pendulum.tz.timezone import UTC
 
 from prepare import prepare_extract, prepare_p6
 
@@ -48,6 +47,9 @@ def pipeline():
     """
     # Sortin-hat: Data & ML Pipeline
     End to End Pipeline for preparing data, training & evaluting ML models.
+
+    ## Connections
+    Expects a GCP connection with the id `google_cloud_default`.
 
     ## Input
     The Data & ML Pipeline expects the following spreadsheets as inputs:
