@@ -106,21 +106,22 @@ def pipeline():
             df = prepare_extract(pd.read_excel(dest_s4_path), year)
             # merge in p6 screening data if present
             if path.exists(dest_p6_path):
-                p6_df = prepare_p6(pd.read_excel(dest_p6_path))
+                # header=1: headers are stored in p6 data on the second row
+                p6_df = prepare_p6(pd.read_excel(dest_p6_path, header=1))
                 df = pd.merge(df, p6_df, how="left", on="Serial number")
 
-        # serial no. column no longer needed post join.
-        df = df.drop(columns=["Serial number"])
-        # write dataframe as parquet files
-        df.to_parquet(f"{year}.parquet")
+            # serial no. column no longer needed post join.
+            df = df.drop(columns=["Serial number"])
+            # write dataframe as parquet files
+            df.to_parquet(f"{year}.parquet")
 
-        # Upload data as parquet files
-        datasets = config["buckets"]["datasets"]
-        gcs.upload(
-            datasets["name"],
-            object_name=f"{datasets['scores_prefix']}/{year}.parquet",
-            filename=f"{year}.parquet",
-        )
+            # Upload data as parquet files
+            datasets = config["buckets"]["datasets"]
+            gcs.upload(
+                datasets["name"],
+                object_name=f"{datasets['scores_prefix']}/{year}.parquet",
+                filename=f"{year}.parquet",
+            )
 
     clean_dataset()
 
