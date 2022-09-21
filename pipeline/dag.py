@@ -5,15 +5,19 @@
 #
 
 from os import path
-from typing import Optional
+from typing import Optional, cast
 
 import pandas as pd
 from airflow.decorators import dag, task
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from pendulum import datetime
 from pendulum.datetime import DateTime
+from pendulum.tz import timezone
 
 from prepare import prepare_extract, prepare_p6
+
+
+TIMEZONE = timezone("Asia/Singapore")
 
 config = {
     "buckets": {
@@ -25,28 +29,27 @@ config = {
         "dataset": {
             "name": "sss-sortin-hat-datasets",
             "scores_prefix": "scores",
-        }
+        },
     }
 }
+
 
 @dag(
     dag_id="sortin-hat-pipeline",
     description="Data & ML Pipeline producing Sortin-hat ML models",
-
     # each dag run handles a year-sized data interval from start_date
-    start_date=datetime(2016, 1, 1, tz="Asia/Singapore"),
+    start_date=datetime(2016, 1, 1, tz=TIMEZONE),
     schedule_interval="@yearly",
-
     # task defaults
-    default_args = {
+    default_args={
         "email_on_failure": True,
         "email": "program.nom@gmail.com",
-    }
+    },
 )
 def pipeline():
     """
     # Sortin-hat: Data & ML Pipeline
-    End to End Pipeline for preparing data, training & evaluting ML models.
+    End to End Pipeline for preparing data, training & evaluating ML models.
 
     ## Connections
     Expects a GCP connection with the id `google_cloud_default`.
@@ -58,40 +61,43 @@ def pipeline():
     > `<SEC4_PREFIX>` & `<P6_PREFIX>` can are configured with
     > the `bucket.raw_data.sec4_prefix` & `bucket.raw_data.p6_prefix`.
 
-    The Excel spreadsheet should be partitioned by year & stored in the 
-    `bucket.raw_data.name` GCS Bucket.
+    The Excel spreadsheet should be partitioned by year & stored in the
+    `bucket.raw_data.name` GCS Bucket. All dates / times are expected to be
+    expressed in the Asia/Singapore time zone.
 
     ## Outputs
-    MLFlow Models & Evaluation results from the ML training process stored in the 
+    MLFlow Models & Evaluation results from the ML training process stored in the
     `bucket.models.name` GCS bucket.
 
     """
-    @task(
-        task_id="clean_dataset"
-    )
-    def clean_dataset(data_interval_start: Optional[DateTime]=None):
+
+    @task(task_id="clean_dataset")
+    def clean_dataset(data_interval_start: Optional[DateTime] = None):
         """
         ### Clean Dataset
         Extracts data from the following Excel yearly-partitioned spreadsheets stored
-        on the `bucket.raw_data.name` GCS bucket.  
+        on the `bucket.raw_data.name` GCS bucket.
 
         Processes the data to clean it
         & loads them as parquet files in into the `bucket.datasets.name` GCS bucket
         as year-partitioned parquet files under the `bucket.datasets.scores_prefix`.
         """
-        raw_data, year = config["buckets"]["raw_data"], data_interval_start.year # type: ignore
+        sg_begin = cast(DateTime, data_interval_start).astimezone(TIMEZONE)
+        raw_data, year = config["buckets"]["raw_data"], sg_begin.year
         gcs = GCSHook()
 
         # Download data as Excel Spreadsheets
         # download Sec 4 Cohort sendout spreadsheet
         s4_path = f"{raw_data['sec4_prefix']}/{year}.xlsx"
         if not gcs.exists(raw_data["name"], s4_path):
-            raise FileNotFoundError(f"Expected S4 Cohort Excel Spreadsheet to exist: {s4_path}")
+            raise FileNotFoundError(
+                f"Expected S4 Cohort Excel Spreadsheet to exist: {s4_path}"
+            )
         gcs.download(raw_data["name"], s4_path, f"s4_{year}.xlsx")
         # download P6 screening spreadsheet if it exists
         p6_path = f"{raw_data['p6_prefix']}/{year}.xlsx"
         if gcs.exists(raw_data["name"], p6_path):
-            gcs.download(raw_data["name"], f"p6_{year}.xlsx")
+            gcs.download(raw_data["name"], p6_path, f"p6_{year}.xlsx")
 
         # Extract & Transform data from spreadsheets to Parquet
         df = prepare_extract(pd.read_excel(f"s4_{year}.xlsx"), year)
@@ -106,8 +112,13 @@ def pipeline():
 
         # Upload data as parquet files
         datasets = config["buckets"]["datasets"]
-        gcs.upload(datasets["name"], 
-                   object_name=f"{datasets['scores_prefix']}/{year}.parquet",
-                   filename=f"{year}.parquet")
+        gcs.upload(
+            datasets["name"],
+            object_name=f"{datasets['scores_prefix']}/{year}.parquet",
+            filename=f"{year}.parquet",
+        )
+
     clean_dataset()
+
+
 dag = pipeline()
