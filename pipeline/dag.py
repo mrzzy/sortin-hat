@@ -5,6 +5,7 @@
 #
 
 from os import path
+from tempfile import TemporaryDirectory
 from typing import Optional, cast
 
 import pandas as pd
@@ -18,7 +19,6 @@ from prepare import prepare_extract, prepare_p6
 
 
 TIMEZONE = timezone("Asia/Singapore")
-
 config = {
     "buckets": {
         "raw_data": {
@@ -87,24 +87,28 @@ def pipeline():
         gcs = GCSHook()
 
         # Download data as Excel Spreadsheets
-        # download Sec 4 Cohort sendout spreadsheet
-        s4_path = f"{raw_data['sec4_prefix']}/{year}.xlsx"
-        if not gcs.exists(raw_data["name"], s4_path):
-            raise FileNotFoundError(
-                f"Expected S4 Cohort Excel Spreadsheet to exist: {s4_path}"
-            )
-        gcs.download(raw_data["name"], s4_path, f"s4_{year}.xlsx")
-        # download P6 screening spreadsheet if it exists
-        p6_path = f"{raw_data['p6_prefix']}/{year}.xlsx"
-        if gcs.exists(raw_data["name"], p6_path):
-            gcs.download(raw_data["name"], p6_path, f"p6_{year}.xlsx")
+        with TemporaryDirectory(prefix=str(year)) as work_dir:
+            # download Sec 4 Cohort sendout spreadsheet
+            src_s4_path = f"{raw_data['sec4_prefix']}/{year}.xlsx"
+            dest_s4_path = path.join(work_dir, "s4.xlsx")
+            if not gcs.exists(raw_data["name"], src_s4_path):
+                raise FileNotFoundError(
+                    f"Expected S4 Cohort Excel Spreadsheet to exist: {src_s4_path}"
+                )
+            gcs.download(raw_data["name"], src_s4_path, dest_s4_path)
+            # download P6 screening spreadsheet if it exists
+            src_p6_path = f"{raw_data['p6_prefix']}/{year}.xlsx"
+            dest_p6_path = path.join(work_dir, "p6.xlsx")
+            if gcs.exists(raw_data["name"], src_p6_path):
+                gcs.download(raw_data["name"], src_p6_path, dest_p6_path)
 
-        # Extract & Transform data from spreadsheets to Parquet
-        df = prepare_extract(pd.read_excel(f"s4_{year}.xlsx"), year)
-        # merge in p6 screening data if present
-        if path.exists(f"p6_{year}.xlsx"):
-            p6_df = prepare_p6(pd.read_excel(f"p6_{year}.xlsx"))
-            df = pd.merge(df, p6_df, how="left", on="Serial number")
+            # Extract & Transform data from spreadsheets to Parquet
+            df = prepare_extract(pd.read_excel(dest_s4_path), year)
+            # merge in p6 screening data if present
+            if path.exists(dest_p6_path):
+                p6_df = prepare_p6(pd.read_excel(dest_p6_path))
+                df = pd.merge(df, p6_df, how="left", on="Serial number")
+
         # serial no. column no longer needed post join.
         df = df.drop(columns=["Serial number"])
         # write dataframe as parquet files
