@@ -26,7 +26,7 @@ config = {
             "sec4_prefix": "Sec4_Cohort",
             "p6_prefix": "P6_Screening",
         },
-        "dataset": {
+        "datasets": {
             "name": "sss-sortin-hat-datasets",
             "scores_prefix": "scores",
         },
