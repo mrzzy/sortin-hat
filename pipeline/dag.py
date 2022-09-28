@@ -28,7 +28,7 @@ config = {
         },
         "datasets": {
             "name": "sss-sortin-hat-datasets",
-            "scores_prefix": "scores",
+            "clean_prefix": "clean",
         },
     }
 }
@@ -71,16 +71,16 @@ def pipeline():
 
     """
 
-    @task(task_id="clean_dataset")
-    def clean_dataset(data_interval_start: Optional[DateTime] = None):
+    @task(task_id="clean_data")
+    def clean_data(data_interval_start: Optional[DateTime] = None):
         """
-        ### Clean Dataset
+        ### Clean Data
         Extracts data from the following Excel yearly-partitioned spreadsheets stored
         on the `bucket.raw_data.name` GCS bucket.
 
         Processes the data to clean it
         & loads them as parquet files in into the `bucket.datasets.name` GCS bucket
-        as year-partitioned parquet files under the `bucket.datasets.scores_prefix`.
+        as year-partitioned parquet files under the `bucket.datasets.clean_prefix`.
         """
         sg_begin = cast(DateTime, data_interval_start).astimezone(TIMEZONE)
         raw_data, year = config["buckets"]["raw_data"], sg_begin.year
@@ -119,11 +119,11 @@ def pipeline():
             datasets = config["buckets"]["datasets"]
             gcs.upload(
                 datasets["name"],
-                object_name=f"{datasets['scores_prefix']}/{year}.parquet",
+                object_name=f"{datasets['clean_prefix']}/{year}.parquet",
                 filename=f"{year}.parquet",
             )
 
-    clean_dataset()
+    clean_data()
 
 
 dag = pipeline()
