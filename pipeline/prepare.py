@@ -6,18 +6,21 @@
 
 from pathlib import Path
 from typing import Iterable, List, Tuple, cast
+
 import numpy as np
 import pandas as pd
 from sklearn.base import re
 
+from clean import clean_p6
 from extract import (
     encode_psle,
     encode_sports_level,
     get_carding,
-    get_gender,
     get_course_tier,
+    get_gender,
     get_housing,
 )
+
 
 # TODO(mrzzy): drop outliers? currently unused
 def drop_outliers(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
@@ -189,80 +192,6 @@ def prepare_extract(df: pd.DataFrame, year: int) -> pd.DataFrame:
     return df.sort_values(by="year")
 
 
-def prepare_p6(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Prepare the given 'P6 Screening' dataframe for model training.
-
-    Args:
-        df:
-            Dataframe to prepare.
-
-    Returns:
-        The prepared dataframe for model training.
-    """
-    # Clean dataframe
-    # fix name of serial no. column
-    df = df.rename(columns={"Unnamed: 0": "Serial number"})
-
-    # restrict to required columns only
-    cols = [
-        "Serial number",
-        "Q1 M",
-        "Q1F",
-        "Q2",
-        "Q3",
-        "Q4",
-        "Q5",
-        "Q6",
-        "Q7",
-        "Q8a",
-        "Q8b",
-        "Q8c",
-        "Percentage (%)",
-        "Percentage (%).1",
-        "Percentage (%).2",
-        "Percentage (%).3",
-        "Percentage (%).4",
-        "Percentage (%).5",
-        "Q1.6",
-        "Q2a",
-        "Q2b",
-        "Q2c",
-        "Q2d",
-        "Q2e",
-        "Q2f",
-        "Q2g",
-        "Q2h",
-        "Q2i",
-        "Q2j",
-        "Q2k",
-        "Q3.7",
-        "Q4a",
-        "Q4b",
-        "Q4c",
-        "Q4d",
-        "Q4e",
-        "Q4f",
-        "Q4g",
-        "Q4h",
-        "Q4i",
-        "Q4j",
-        "Q4k",
-    ]
-    df = df[cols]
-
-    # fix question Q1 M data type by converting unknown strings to NaN
-    # TODO(mrzzy): rectify data upstream "x+C75:C80" string in data
-    df["Q1 M"] = pd.to_numeric(df["Q1 M"], errors="coerce")
-
-    ## drop students with missing serial nos
-    df["Serial number"] = df["Serial number"].replace("x", np.nan)
-    df = df[~df["Serial number"].isna()]
-    df["Serial number"] = df["Serial number"].astype(np.int_)
-
-    return df
-
-
 def load_dataset(
     data_dir: Path, extract_regex: re.Pattern, p6_regex: re.Pattern
 ) -> pd.DataFrame:
@@ -304,7 +233,7 @@ def load_dataset(
         .drop(columns="index")
     )
     p6_df = (
-        pd.concat([prepare_p6(df) for df in p6_dfs]).reset_index().drop(columns="index")
+        pd.concat([clean_p6(df) for df in p6_dfs]).reset_index().drop(columns="index")
     )
     # join p6 screening data to the rest of the data extract
     df = pd.merge(extract_df, p6_df, how="left", on="Serial number")

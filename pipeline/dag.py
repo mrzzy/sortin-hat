@@ -15,7 +15,8 @@ from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
 
-from prepare import prepare_extract, prepare_p6
+from clean import clean_p6
+from prepare import prepare_extract
 
 
 TIMEZONE = timezone("Asia/Singapore")
@@ -107,7 +108,7 @@ def pipeline():
             # merge in p6 screening data if present
             if path.exists(dest_p6_path):
                 # header=1: headers are stored in p6 data on the second row
-                p6_df = prepare_p6(pd.read_excel(dest_p6_path, header=1))
+                p6_df = clean_p6(pd.read_excel(dest_p6_path, header=1))
                 df = pd.merge(df, p6_df, how="left", on="Serial number")
 
             # serial no. column no longer needed post join.
