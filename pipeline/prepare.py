@@ -32,7 +32,7 @@ def drop_outliers(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
         cols:
             Check for outliers in the data values of this list of columns.
     Returns:
-        D# traataFrame, with the rows identified as outliers, dropped.
+        DataFrame, with the rows identified as outliers, dropped.
     """
     # compute lower, upper quantile & inter-quantile range (IQR)
     lower_quantile, upper_quantile = df[cols].quantile(0.25), df[cols].quantile(0.75)
