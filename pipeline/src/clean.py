@@ -80,3 +80,27 @@ def clean_p6(df: pd.DataFrame) -> pd.DataFrame:
     df["Serial number"] = df["Serial number"].astype(np.int_)
 
     return df
+
+
+def clean_extract(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Clean the given 'Data Extraction' dataa.
+
+    Args:
+        df:
+            Dataframe to cleaned.
+
+    Returns:
+        The cleaned dataframe for model training.
+    """
+    # Clean dataframe
+    # parse "-" / 0 for missing value
+    df = df.replace("-", np.nan).replace("0", np.nan).replace(0, np.nan)
+    # enforce integer type for serial numbers
+    df["Serial number"] = df["Serial number"].astype(np.int_)
+    # rename 'Sec4_BoardingStatus' to 'BoardingStatus' as they appear to refer
+    # to the same thing
+    if "Sec4_BoardingStatus" in df.columns:
+        df = df.rename(columns={"Sec4_BoardingStatus": "BoardingStatus"})
+
+    return df

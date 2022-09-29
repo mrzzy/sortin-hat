@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import re
 
-from clean import clean_p6
+from clean import clean_extract, clean_p6
 from extract import (
     encode_psle,
     encode_sports_level,
@@ -66,14 +66,11 @@ def prepare_extract(df: pd.DataFrame, year: int) -> pd.DataFrame:
     Returns:
         The prepared dataframe for model training.
     """
-    # Clean dataframe
-    # parse "-" / 0 for missing value
-    df = df.replace("-", np.nan).replace("0", np.nan).replace(0, np.nan)
+    df = clean_extract(df)
     # suffix subject columns with secondary level
     df = suffix_subject_level(df, year)
     # drop YYYY result columns which is empty
     df = df.drop(columns=[col for col in df.columns if "Result" in col])
-
     # reduce carding level to boolean flag
     df["Sec4_CardingLevel"] = (
         df["Sec4_CardingLevel"]
@@ -85,12 +82,6 @@ def prepare_extract(df: pd.DataFrame, year: int) -> pd.DataFrame:
         )
         .replace(np.nan, False)
     )
-    # enforce integer type for serial numbers
-    df["Serial number"] = df["Serial number"].astype(np.int_)
-    # rename 'Sec4_BoardingStatus' to 'BoardingStatus' as they appear to refer
-    # to the same thing
-    if "Sec4_BoardingStatus" in df.columns:
-        df = df.rename(columns={"Sec4_BoardingStatus": "BoardingStatus"})
 
     # Extract Features
     # add year column to mark the year the data originated from

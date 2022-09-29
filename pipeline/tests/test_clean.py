@@ -4,9 +4,12 @@
 # Clean Data Unit Tests
 #
 
+import numpy as np
 import pandas as pd
 
-from clean import P6_COLUMNS, clean_p6
+from clean import P6_COLUMNS, clean_extract, clean_p6
+
+SERIAL_NO = "Serial number"
 
 
 def test_clean_p6():
@@ -19,9 +22,8 @@ def test_clean_p6():
     }
     # cleaning operations do not apply to other columns, add dummy values for them
     dummy_cols = set(P6_COLUMNS).difference(test_values.keys())
-    serial_no = "Serial number"
     test_values.update(
-        {col: list(range(n_rows)) for col in dummy_cols if col != serial_no}
+        {col: list(range(n_rows)) for col in dummy_cols if col != SERIAL_NO}
     )
 
     df = clean_p6(pd.DataFrame(test_values))
@@ -31,6 +33,26 @@ def test_clean_p6():
     # check: all selected columns are present
     assert all([c in df.columns for c in P6_COLUMNS])
     # check: renamed from "Unnamed: 0", dropped invalid number 'x'
-    assert (df[serial_no] == pd.Series([1, 2], name=serial_no)).all()
+    assert (df[SERIAL_NO] == pd.Series([1, 2], name=SERIAL_NO)).all()
     # check: 'Q1 M' column values coerced into numeric
-    assert df.loc[df[serial_no] == 2, "Q1 M"].isna().all()
+    assert df.loc[df[SERIAL_NO] == 2, "Q1 M"].isna().all()
+
+
+def test_clean_extract():
+    df = clean_extract(
+        pd.DataFrame(
+            {
+                "missing": ["-", "0", 0],
+                "Serial number": [1, 2.0, 3],
+                "Sec4_BoardingStatus": np.arange(1, 4),
+            }
+        )
+    )
+
+    # check: missing values are converted to nan
+    assert df["missing"].isna().all()
+    # check: serial numbers are ints
+    assert df[SERIAL_NO].dtype == np.int_
+    # check: 'Sec4_BoardingStatus' renamed to 'BoardingStatus'
+    print(df["BoardingStatus"])
+    assert (df["BoardingStatus"] == pd.Series(np.arange(1, 4))).all()
