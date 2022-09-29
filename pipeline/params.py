@@ -2,15 +2,15 @@
 # Model Training Parameters
 #
 
-import mlflow
-
 from typing import Any, Dict
+
+import mlflow
 from sklearn.impute import KNNImputer, SimpleImputer
 from sklearn.linear_model import ElasticNet
-from sklearn.tree import DecisionTreeRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.svm import SVR
+from sklearn.tree import DecisionTreeRegressor
 from xgboost import XGBRegressor
 
 params = {

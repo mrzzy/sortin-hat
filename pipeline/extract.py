@@ -5,8 +5,10 @@
 #
 
 from math import isnan
-import numpy as np
 from typing import Union, cast
+
+import numpy as np
+
 
 # feature extraction functions sourced from '01 English.ipynb'
 # get psle results band

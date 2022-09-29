@@ -18,7 +18,6 @@ from pendulum.tz import timezone
 from clean import clean_p6
 from prepare import prepare_extract
 
-
 TIMEZONE = timezone("Asia/Singapore")
 config = {
     "buckets": {

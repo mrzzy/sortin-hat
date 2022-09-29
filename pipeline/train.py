@@ -3,20 +3,18 @@
 # Train Model
 #
 
-import re
-import pandas as pd
-import mlflow as ml
 import logging as log
-
-from pathlib import Path
+import re
 from argparse import ArgumentParser
+from pathlib import Path
 
-from sklearn.model_selection import train_test_split, cross_validate
+import mlflow as ml
+import pandas as pd
+from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.pipeline import Pipeline
 
+from params import hydrate, model_loggers, params
 from prepare import load_dataset, segment_dataset
-from params import params, hydrate, model_loggers
-
 
 if __name__ == "__main__":
     log.basicConfig(
