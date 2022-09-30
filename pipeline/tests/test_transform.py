@@ -1,22 +1,35 @@
-#
 # Sort'in Hat
 # Models
 # Transform Data Unit Tests
 #
 
+from typing import Any, Dict
+
 import numpy as np
 import pandas as pd
+import pytest
 
 from transform import suffix_subject_level
 
+FORWARDED_PREFIX = "forwarded_"
+SUBJECTS = ["English", "Maths", "Science"]
 
-def test_suffix_subject_level():
+
+@pytest.fixture
+def forwarded_data() -> Dict[str, Any]:
+    """
+    Returns dict of 5 dummy columns with 3 rows each to verify forwarding.
+    """
+    return {f"{FORWARDED_PREFIX}{i}": np.arange(3, dtype=np.float_) for i in range(5)}
+
+
+def test_suffix_subject_level(forwarded_data: Dict[str, Any]):
     n_rows = 3
     # test columns to verify forwarding of non subject columns
-    test_data = {f"forwarded_{i}": np.arange(n_rows, dtype=np.float_) for i in range(5)}
+    test_data = forwarded_data
     # generate test data for cohort year spanning back n_years
-    cohort_year, n_year, subjects = 2016, 4, ["English", "Maths", "Science"]
-    for i in range(1, n_year):
+    cohort_year, n_years = 2016, 4
+    for i in range(1, n_years):
         current_year = cohort_year - i
         # current year result divider column
         test_data[f"{current_year} Results"] = np.empty(n_rows)
@@ -24,7 +37,7 @@ def test_suffix_subject_level():
         test_data.update(
             {
                 f"{subject}.{i+1}": np.arange(n_rows, dtype=np.float_)
-                for subject in subjects
+                for subject in SUBJECTS
             }
         )
 
@@ -32,7 +45,7 @@ def test_suffix_subject_level():
 
     # check: check test columns are forwarded correctly
     forwarded_cols = frozenset(
-        [forwarded for forwarded in test_data.keys() if "forwarded_" in forwarded]
+        [forwarded for forwarded in test_data.keys() if FORWARDED_PREFIX in forwarded]
     )
     assert all([f in df.columns for f in forwarded_cols])
 
@@ -48,7 +61,7 @@ def test_suffix_subject_level():
     for year_col, subject_cols in subject_df.groupby("Year"):
         # check: subjects are tagged with expected secondary school level
         year = int(year_col.split()[0])
-        level = n_year - (cohort_year - year)
+        level = n_years - (cohort_year - year)
         assert all(
-            [f"{subject} [S{level}]" in subject_cols.index for subject in subjects]
+            [f"{subject} [S{level}]" in subject_cols.index for subject in SUBJECTS]
         )
