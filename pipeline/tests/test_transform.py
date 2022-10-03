@@ -7,20 +7,11 @@ from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
-import pytest
+from conftest import FORWARDED_PREFIX
 
 from transform import suffix_subject_level
 
-FORWARDED_PREFIX = "forwarded_"
 SUBJECTS = ["English", "Maths", "Science"]
-
-
-@pytest.fixture
-def forwarded_data() -> Dict[str, Any]:
-    """
-    Returns dict of 5 dummy columns with 3 rows each to verify forwarding.
-    """
-    return {f"{FORWARDED_PREFIX}{i}": np.arange(3, dtype=np.float_) for i in range(5)}
 
 
 def test_suffix_subject_level(forwarded_data: Dict[str, Any]):
