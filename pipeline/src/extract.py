@@ -13,19 +13,25 @@ import pandas as pd
 CARDING_LEVELS = ["L3", "Y", "L4P", "L4", "YT", "TL3", "E3", "B4", "ET3", "Y+"]
 PSLE_SUBJECTS = ["EL", "MT", "Maths", "Sci", "HMT"]
 
-# feature extraction functions sourced from '01 English.ipynb'
-# get psle results band
-def encode_psle(df: pd.DataFrame) -> pd.DataFrame
-    df[PSLE_SUBJECTS].replace({
-        "A*": 1,
-        "A": 2,
-        "B": 3,
-        "C": 4,
-        "D": 5,
-        "E": 6,
-        "F": 7,
-    }).transform(lambda grade: grade if 1 <= grade <= 7 else pd.NA)
-        return float("NaN")
+
+def encode_psle(df: pd.DataFrame) -> pd.DataFrame:
+    """Encode PSLE results band."""
+    df[PSLE_SUBJECTS] = (
+        df[PSLE_SUBJECTS]
+        .replace(
+            {
+                "A*": 1,
+                "A": 2,
+                "B": 3,
+                "C": 4,
+                "D": 5,
+                "E": 6,
+                "F": 7,
+            }
+        )
+        .applymap(lambda grade: grade if 1 <= grade <= 7 else pd.NA)
+    )  # type: ignore
+    return df
 
 
 # get housing tier
@@ -136,15 +142,11 @@ def encode_sports_level(level: Union[str, float]) -> int:
     else:
         raise ValueError(f"Unsupported sports level: {level}")
 
+
 def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     df["Sec4_CardingLevel"] = (
         df["Sec4_CardingLevel"]
-        .replace(
-            {
-                l: True
-                for l in CARDING_LEVELS
-            }
-        )
+        .replace({l: True for l in CARDING_LEVELS})
         .replace(np.nan, False)
     )
 
@@ -156,9 +158,7 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
         "Course": get_course_tier,
         "ResidentialType": get_housing,
     }
-    extract_fns.update(
-        {subject: encode_psle for subject in PSLE_COLUMNS}
-    )
+    extract_fns.update({subject: encode_psle for subject in PSLE_COLUMNS})
     df[list(extract_fns.keys())] = df.transform(extract_fns)
 
     # replace rest of the categorical columns with a one-hot encoding as there
@@ -166,7 +166,6 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     category_cols = df.dtypes[df.dtypes == np.dtype("O")].index
     encodings = pd.get_dummies(df[category_cols])
     df = df.drop(columns=category_cols).join(encodings)
-
 
     # TODO(mrzzy): move to suffix_subject_level()
     df = df.drop(columns=category_cols).join(encodings)
