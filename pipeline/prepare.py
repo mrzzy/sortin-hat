@@ -23,36 +23,6 @@ from extract import (
 from transform import suffix_subject_level
 
 
-# TODO(mrzzy): drop outliers? currently unused
-def drop_outliers(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
-    """Drop outliers identified in the given dataframe from the given columns.
-
-    Outliers are identified as data values that exceed the 1.5 * the IQR range
-    from 25 percentile (Q1) or 75 percentile (Q3).
-
-    Args:
-        df:
-            DataFrame to look for outliers in.
-        cols:
-            Check for outliers in the data values of this list of columns.
-    Returns:
-        DataFrame, with the rows identified as outliers, dropped.
-    """
-    # compute lower, upper quantile & inter-quantile range (IQR)
-    lower_quantile, upper_quantile = df[cols].quantile(0.25), df[cols].quantile(0.75)
-    iqr = upper_quantile - lower_quantile
-
-    # filter out rows identified as outliers: consider all rows with at least
-    # 1 data value outside the acceptable range for the range as outliers.
-    allowed_deviation = 1.5 * iqr
-    outliers = (
-        (df[cols] < (lower_quantile - allowed_deviation))
-        | (df[cols] > (upper_quantile + allowed_deviation))
-    ).any(axis=1)
-
-    return df[~outliers].copy()
-
-
 def prepare_extract(df: pd.DataFrame, year: int) -> pd.DataFrame:
     """
     Prepare the given 'Data Extraction' dataframe for model training.
@@ -72,28 +42,7 @@ def prepare_extract(df: pd.DataFrame, year: int) -> pd.DataFrame:
     # drop YYYY result columns which is empty
     df = df.drop(columns=[col for col in df.columns if "Result" in col])
     # reduce carding level to boolean flag
-    df["Sec4_CardingLevel"] = (
-        df["Sec4_CardingLevel"]
-        .replace(
-            {
-                l: True
-                for l in ["L3", "Y", "L4P", "L4", "YT", "TL3", "E3", "B4", "ET3", "Y+"]
-            }
-        )
-        .replace(np.nan, False)
-    )
-
     # Extract Features
-    # add year column to mark the year the data originated from
-    df["year"] = year
-    # extract categorical features using custom feature extraction functions
-    extract_fns = {
-        "Gender": get_gender,
-        "Sec4_CardingLevel": get_carding,
-        "Sec4_SportsLevel": encode_sports_level,
-        "Course": get_course_tier,
-        "ResidentialType": get_housing,
-    }
     extract_fns.update(
         {subject: encode_psle for subject in ["EL", "MT", "Maths", "Sci", "HMT"]}
     )
