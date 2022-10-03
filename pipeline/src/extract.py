@@ -5,7 +5,7 @@
 #
 
 from math import isnan
-from typing import Union, cast
+from typing import Any, Dict, Union, cast
 
 import numpy as np
 import pandas as pd
@@ -13,24 +13,27 @@ import pandas as pd
 CARDING_LEVELS = ["L3", "Y", "L4P", "L4", "YT", "TL3", "E3", "B4", "ET3", "Y+"]
 PSLE_SUBJECTS = ["EL", "MT", "Maths", "Sci", "HMT"]
 
+# TODO(mrzzy): convert all simple extract functions to use map_values()
+def map_values(
+    df: pd.DataFrame, mapping: Dict[Any, Any], default=pd.NA
+) -> pd.DataFrame:
+    return df.applymap(lambda value: mapping[value] if value in mapping else default)
+
 
 def encode_psle(df: pd.DataFrame) -> pd.DataFrame:
     """Encode PSLE results band."""
-    df[PSLE_SUBJECTS] = (
-        df[PSLE_SUBJECTS]
-        .replace(
-            {
-                "A*": 1,
-                "A": 2,
-                "B": 3,
-                "C": 4,
-                "D": 5,
-                "E": 6,
-                "F": 7,
-            }
-        )
-        .applymap(lambda grade: grade if 1 <= grade <= 7 else pd.NA)
-    )  # type: ignore
+    df[PSLE_SUBJECTS] = map_values(
+        df[PSLE_SUBJECTS],
+        {
+            "A*": 1,
+            "A": 2,
+            "B": 3,
+            "C": 4,
+            "D": 5,
+            "E": 6,
+            "F": 7,
+        },
+    )
     return df
 
 
