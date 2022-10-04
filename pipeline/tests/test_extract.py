@@ -9,7 +9,29 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 
-from extract import PSLE_SUBJECTS, encode_psle
+from extract import PSLE_SUBJECTS, encode_psle, map_values
+
+
+def test_map_values():
+    df = map_values(
+        df=pd.DataFrame(
+            {
+                "A": np.arange(3),
+                "B": np.arange(1, 4),
+            }
+        ),
+        mapping={
+            1.0: 1.0,
+            3.0: 3.0,
+            2.0: 99.0,
+        },
+    )
+    # check: values mapped in all columns
+    assert (df["A"].values[1:] == np.array([1.0, 99.0])).all()
+    assert (df["B"].values[:3] == np.array([1.0, 99.0, 3.0])).all()
+
+    # check: default applied when mapping is not defined
+    assert pd.isna(df["A"][:1]).all()
 
 
 def test_encode_psle(forwarded_data: Dict[str, Any]):
