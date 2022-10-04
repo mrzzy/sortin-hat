@@ -7,17 +7,17 @@ from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
-from conftest import FORWARDED_PREFIX
+from conftest import DUMMY_PREFIX
 
 from transform import suffix_subject_level
 
 SUBJECTS = ["English", "Maths", "Science"]
 
 
-def test_suffix_subject_level(forwarded_data: Dict[str, Any]):
+def test_suffix_subject_level(dummy_data: Dict[str, Any]):
     n_rows = 3
     # test columns to verify forwarding of non subject columns
-    test_data = forwarded_data
+    test_data = dummy_data
     # generate test data for cohort year spanning back n_years
     cohort_year, n_years = 2016, 4
     for i in range(1, n_years):
@@ -36,7 +36,7 @@ def test_suffix_subject_level(forwarded_data: Dict[str, Any]):
 
     # check: check test columns are forwarded correctly
     forwarded_cols = frozenset(
-        [forwarded for forwarded in test_data.keys() if FORWARDED_PREFIX in forwarded]
+        [forwarded for forwarded in test_data.keys() if DUMMY_PREFIX in forwarded]
     )
     assert all([f in df.columns for f in forwarded_cols])
 

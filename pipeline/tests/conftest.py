@@ -10,12 +10,13 @@ from typing import Any, Dict
 import numpy as np
 import pytest
 
-FORWARDED_PREFIX = "forwarded_"
+DUMMY_PREFIX = "forwarded_"
 
 
 @pytest.fixture
-def forwarded_data() -> Dict[str, Any]:
+def dummy_data() -> Dict[str, Any]:
     """
-    Returns dict of 5 dummy columns with 3 rows each to verify forwarding.
+    Returns dict of 5 dummy columns with 3 rows each useful for constructing
+    dummy Pandas DataFrames.
     """
-    return {f"{FORWARDED_PREFIX}{i}": np.arange(3, dtype=np.float_) for i in range(5)}
+    return {f"{DUMMY_PREFIX}{i}": np.arange(3, dtype=np.float_) for i in range(5)}
