@@ -45,6 +45,7 @@ def test_clean_extract():
                 "missing": ["-", "0", 0],
                 "Serial number": [1, 2.0, 3],
                 "Sec4_BoardingStatus": np.arange(1, 4),
+                "Sec4_SportsLevel": ["L1", "1", "2A"],
             }
         )
     )
@@ -54,5 +55,6 @@ def test_clean_extract():
     # check: serial numbers are ints
     assert df[SERIAL_NO].dtype == np.int_
     # check: 'Sec4_BoardingStatus' renamed to 'BoardingStatus'
-    print(df["BoardingStatus"])
-    assert (df["BoardingStatus"] == pd.Series(np.arange(1, 4))).all()
+    assert (df["BoardingStatus"] == np.arange(1, 4)).all()
+    # check: leading 'L' in 'Sec4_SportsLevel' stripped
+    assert (df["Sec4_SportsLevel"] == np.array(["1", "1", "2A"])).all()

@@ -102,5 +102,7 @@ def clean_extract(df: pd.DataFrame) -> pd.DataFrame:
     # to the same thing
     if "Sec4_BoardingStatus" in df.columns:
         df = df.rename(columns={"Sec4_BoardingStatus": "BoardingStatus"})
+    # strip leading 'L' from level as some level's are missing leading 'L'
+    df["Sec4_SportsLevel"] = df["Sec4_SportsLevel"].str.replace("L", "")
 
     return df
