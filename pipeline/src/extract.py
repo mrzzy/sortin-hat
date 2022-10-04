@@ -4,173 +4,94 @@
 # Feature Extraction
 #
 
-from math import isnan
-from typing import Any, Dict, Union, cast
+from typing import Any, Dict, Union
 
 import numpy as np
 import pandas as pd
 
-CARDING_LEVELS = ["L3", "Y", "L4P", "L4", "YT", "TL3", "E3", "B4", "ET3", "Y+"]
+# feature extraction mappings
 PSLE_SUBJECTS = ["EL", "MT", "Maths", "Sci", "HMT"]
+PSLE_MAPPING = {
+    "A*": 1,
+    "A": 2,
+    "B": 3,
+    "C": 4,
+    "D": 5,
+    "E": 6,
+    "F": 7,
+}
 
-# TODO(mrzzy): convert all simple extract functions to use map_values()
+HOUSING_MAPPING = {
+    "Detached House": 1,
+    "Semi-Detached House": 2,
+    "Terrace": 3,
+    "Private Flat/Apartment": 4,
+    "Govt/Quasi-Govt Executive Flat": 5,
+    "HDB/SAF/PSA/PUB 5_Room Flat": 6,
+    "HDB/SAF/PSA/PUB 4_Room Flat": 7,
+    "HDB/SAF/PSA/PUB 3_Room Flat": 8,
+    "other": 9,
+}
+
+COURSE_MAPPING = {
+    "Express": 1,
+    "Normal Academic": 2,
+    "Normal Technical": 3,
+}
+
+GENDER_MAPPING = {
+    "Male": 1,
+    "Female": 0,
+}
+
+CARDING_LEVELS = ["L3", "Y", "L4P", "L4", "YT", "TL3", "E3", "B4", "ET3", "Y+"]
+CARDING_MAPPING = {level: True for level in CARDING_LEVELS}
+
+SPORTS_LEVEL_MAPPING = {
+    "1*": 1,
+    "1A": 2,
+    "1": 3,
+    "2*": 4,
+    "2A": 5,
+    "2": 6,
+    "3*": 7,
+    "3A": 8,
+    "3": 9,
+}
+
+
 def map_values(
-    df: pd.DataFrame, mapping: Dict[Any, Any], default=pd.NA
-) -> pd.DataFrame:
-    return df.applymap(lambda value: mapping[value] if value in mapping else default)
-
-
-def encode_psle(df: pd.DataFrame) -> pd.DataFrame:
-    """Encode PSLE results band."""
-    df[PSLE_SUBJECTS] = map_values(
-        df[PSLE_SUBJECTS],
-        {
-            "A*": 1,
-            "A": 2,
-            "B": 3,
-            "C": 4,
-            "D": 5,
-            "E": 6,
-            "F": 7,
-        },
-    )
-    return df
-
-
-# get housing tier
-def get_housing(house):
-    if house == "Detached House":
-        return 1
-    elif house == "Semi-Detached House":
-        return 2
-    elif house == "Terrace":
-        return 3
-    elif house == "Private Flat/Apartment":
-        return 4
-    elif house == "Govt/Quasi-Govt Executive Flat":
-        return 5
-    elif house == "HDB/SAF/PSA/PUB 5_Room Flat":
-        return 6
-    elif house == "HDB/SAF/PSA/PUB 4_Room Flat":
-        return 7
-    elif house == "HDB/SAF/PSA/PUB 3_Room Flat":
-        return 8
-    elif house == "other":
-        return 9
-    else:
-        return float("NaN")
-
-
-def get_course_tier(course):
-    if course == "Express":
-        return 1
-    elif course == "Normal Academic":
-        return 2
-    elif course == "Normal Technical":
-        return 3
-    else:
-        return float("NaN")
-
-
-def get_gender(gender):
-    if gender == "Male":
-        return 1
-    elif gender == "Female":
-        return 0
-    else:
-        return float("NaN")
-
-
-def get_carding(i):
-    if i == True:
-        return 1
-    elif i == False:
-        return 0
-    else:
-        return float("NaN")
-
-
-def get_grade(score):
-    """Obtain a academic score grade for the given score 0-100."""
-    # TODO(mrzzy): this banding is only correct for express students
-    if score >= 75:
-        return 1
-    elif score >= 70 and score < 75:
-        return 2
-    elif score >= 65 and score < 70:
-        return 3
-    elif score >= 60 and score < 65:
-        return 4
-    elif score >= 55 and score < 60:
-        return 5
-    elif score >= 50 and score < 55:
-        return 6
-    elif score >= 45 and score < 50:
-        return 7
-    elif score >= 40 and score < 45:
-        return 8
-    elif score < 40:
-        return 9
-    else:
-        return float("NaN")
-
-
-def encode_sports_level(level: Union[str, float]) -> int:
-    """Encode the given Sport Level as an integer."""
-    # rank missing values in the last ranking (10).
-    if isinstance(level, float) and isnan(level):
-        return 10
-
-    # strip leading 'L' from level as some level's are missing leading 'L'
-    level = cast(str, level).replace("L", "")
-
-    if level == "1*":
-        return 1
-    elif level == "1A":
-        return 2
-    elif level == "1":
-        return 3
-    elif level == "2*":
-        return 4
-    elif level == "2A":
-        return 5
-    elif level == "2":
-        return 6
-    elif level == "3*":
-        return 7
-    elif level == "3A":
-        return 8
-    elif level == "3":
-        return 9
-    else:
-        raise ValueError(f"Unsupported sports level: {level}")
+    df: Union[pd.DataFrame, pd.Series],
+    mapping: Dict[Any, Any],
+    default: Any = pd.NA,
+) -> Union[pd.DataFrame, pd.Series]:
+    """Map values in the given DataFrame or Series using the given dictionary mapping."""
+    replacer = lambda value: mapping[value] if value in mapping.keys() else default
+    if isinstance(df, pd.DataFrame):
+        return df.applymap(replacer)
+    # otherwise, we are dealing with a series, which has an .map() instead of .applymap()
+    return df.map(replacer)
 
 
 def extract_features(df: pd.DataFrame) -> pd.DataFrame:
-    df["Sec4_CardingLevel"] = (
-        df["Sec4_CardingLevel"]
-        .replace({l: True for l in CARDING_LEVELS})
-        .replace(np.nan, False)
+    # extract categorical features using feature extraction mappings
+    df["Sec4_CardingLevel"] = map_values(
+        df["Sec4_CardingLevel"], CARDING_MAPPING, default=False
     )
-
-    # extract categorical features using custom feature extraction functions
-    extract_fns = {
-        "Gender": get_gender,
-        "Sec4_CardingLevel": get_carding,
-        "Sec4_SportsLevel": encode_sports_level,
-        "Course": get_course_tier,
-        "ResidentialType": get_housing,
-    }
-    extract_fns.update({subject: encode_psle for subject in PSLE_COLUMNS})
-    df[list(extract_fns.keys())] = df.transform(extract_fns)
+    df["Gender"] = map_values(df["Gender"], GENDER_MAPPING)
+    # rank missing sports levels in the last ranking (10)
+    df["Sec4_SportsLevel"] = map_values(
+        df["Sec4_SportsLevel"], SPORTS_LEVEL_MAPPING, default=10
+    )
+    df["Course"] = map_values(df["Course"], COURSE_MAPPING)
+    df["ResidentialType"] = map_values(df["ResidentialType"], HOUSING_MAPPING)
+    df[PSLE_SUBJECTS] = map_values(df[PSLE_SUBJECTS], PSLE_MAPPING)
 
     # replace rest of the categorical columns with a one-hot encoding as there
     # are no ordering dependencies between levels
+    # TODO(mrzzy): use Sklearn implementation
     category_cols = df.dtypes[df.dtypes == np.dtype("O")].index
-    encodings = pd.get_dummies(df[category_cols])
-    df = df.drop(columns=category_cols).join(encodings)
-
-    # TODO(mrzzy): move to suffix_subject_level()
-    df = df.drop(columns=category_cols).join(encodings)
-
+    if len(category_cols) > 1:
+        encodings = pd.get_dummies(df[category_cols])
+        df = df.drop(columns=category_cols).join(encodings)
     return df
