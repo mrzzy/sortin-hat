@@ -1,15 +1,16 @@
 #
 # sortin-hat
-# Data & ML Pipeline
+# Pipeline
 # Airflow DAG
 #
 
 from os import path
 from tempfile import TemporaryDirectory
-from typing import Optional, cast
+from typing import Any, Dict, Optional, cast
 
 import pandas as pd
 from airflow.decorators import dag, task
+from airflow.models.dag import DAG
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from pendulum import datetime
 from pendulum.datetime import DateTime
@@ -36,34 +37,41 @@ config = {
 
 @dag(
     dag_id="sortin-hat-pipeline",
-    description="Data & ML Pipeline producing Sortin-hat ML models",
+    description="Sortin-hat ML Pipeline",
     # each dag run handles a year-sized data interval from start_date
     start_date=datetime(2016, 1, 1, tz=TIMEZONE),
     schedule_interval="@yearly",
 )
-def pipeline():
+def pipeline(
+    raw_bucket: str = "sss-sortin-hat-raw-data",
+    raw_s4_prefix: str = "Sec4_Cohort",
+    raw_p6_prefix: str = "P6_Screening",
+    datasets_bucket: str = "sss-sortin-hat-datasets",
+    models_bucket: str = "sss-sortin-hat-models",
+):
     """
-    # Sortin-hat: Data & ML Pipeline
-    End to End Pipeline for preparing data, training & evaluating ML models.
+    # Sortin-hat ML Pipeline
+    End to End Pipeline for training Sortin-hat ML models for predicting student scores.
 
-    ## Connections
-    Expects a GCP connection with the id `google_cloud_default`.
+    ## Prerequisites
+    ### Connections
+    Expects a GCP connection to be configured with the id `google_cloud_default`
 
-    ## Input
-    The Data & ML Pipeline expects the following spreadsheets as inputs:
-    - Sec 4 Cohort Sendout: stored under `<SEC4_PREFIX>/<YEAR>.xlsx`
-    - P6 Screening Template: stored under `<P6_PREFIX>/<YEAR>.xlsx`
-    > `<SEC4_PREFIX>` & `<P6_PREFIX>` can are configured with
-    > the `bucket.raw_data.sec4_prefix` & `bucket.raw_data.p6_prefix`.
+    ### Infrastructure
+    GCS buckets `raw_bucket`, `datasets_bucket` & `models_bucket` should be created
+    beforehand.
 
-    The Excel spreadsheet should be partitioned by year & stored in the
-    `bucket.raw_data.name` GCS Bucket. All dates / times are expected to be
-    expressed in the Asia/Singapore time zone.
+    ### Data Source
+    The pipeline takes in as data source 2 kinds of Excel Spreadsheets stored
+    in the `raw_bucket` GCS bucket, partitioned by year:
+    - Sec 4 Cohort Sendout, stored as `raw_s4_prefix/<YEAR>.xlsx`
+    - P6 Screening Template, stored as `raw_p6_prefix/<YEAR>.xlsx`
+
+    The pipeline assumes that all dates / times are expressed in the Asia/Singapore time zone.
 
     ## Outputs
     MLFlow Models & Evaluation results from the ML training process stored in the
-    `bucket.models.name` GCS bucket.
-
+    `models_bucket` GCS bucket.
     """
 
     @task(task_id="clean_data")
@@ -119,6 +127,3 @@ def pipeline():
             )
 
     clean_data()
-
-
-dag = pipeline()
