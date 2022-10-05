@@ -5,7 +5,6 @@
 #
 
 import re
-from typing import Iterable, Tuple, cast
 
 import pandas as pd
 
