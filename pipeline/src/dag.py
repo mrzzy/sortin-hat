@@ -40,11 +40,6 @@ config = {
     # each dag run handles a year-sized data interval from start_date
     start_date=datetime(2016, 1, 1, tz=TIMEZONE),
     schedule_interval="@yearly",
-    # task defaults
-    default_args={
-        "email_on_failure": True,
-        "email": "program.nom@gmail.com",
-    },
 )
 def pipeline():
     """
