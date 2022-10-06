@@ -101,6 +101,8 @@ def pipeline(
                 storage_options=storage_options,
             )
         )
+        # suffix subjects columns with level the subject was taken
+        df = suffix_subject_level(df, year)
         # merge in cleaned p6 data if it exists
         gcs = GCSHook()
         if gcs.exists(raw_bucket, f"{raw_p6_prefix}/{year}.xlsx"):
@@ -113,8 +115,6 @@ def pipeline(
                 )
             )
             df = pd.merge(df, p6_df, how="left", on="Serial number")
-        # suffix subjects with level the subject was taken
-        df = suffix_subject_level(df, year)
         # write transformed dataset as compressed parquet file
         dataset_path = f"gs://{datasets_bucket}/dataset_{year}.pq"
         df.to_parquet(dataset_path, storage_options=storage_options)
