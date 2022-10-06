@@ -15,19 +15,6 @@ from clean import clean_extract, clean_p6
 from transform import suffix_subject_level
 
 TIMEZONE = timezone("Asia/Singapore")
-config = {
-    "buckets": {
-        "raw_data": {
-            "name": "sss-sortin-hat-raw-data",
-            "sec4_prefix": "Sec4_Cohort",
-            "p6_prefix": "P6_Screening",
-        },
-        "datasets": {
-            "name": "sss-sortin-hat-datasets",
-            "clean_prefix": "clean",
-        },
-    }
-}
 
 
 @dag(
@@ -94,7 +81,10 @@ def pipeline(
         # suffix subjects with level the subject was taken
         df = suffix_subject_level(df, year)
 
-        # write transfomred dataset as compressed parquet file
+        # write transformed dataset as compressed parquet file
         df.to_parquet(f"gs://{datasets_bucket}/dataset_{year}.pq")
 
     transform_dataset()
+
+
+dag = pipeline()
