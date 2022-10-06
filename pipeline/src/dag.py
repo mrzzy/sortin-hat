@@ -106,8 +106,10 @@ def pipeline(
         if gcs.exists(raw_bucket, f"{raw_p6_prefix}/{year}.xlsx"):
             p6_df = clean_p6(
                 pd.read_excel(
-                    f"gs://{raw_bucket}/{raw_p6_prefix}.xlsx",
+                    # header=1: headers are stored in p6 data on the second row
+                    f"gs://{raw_bucket}/{raw_p6_prefix}/{year}.xlsx",
                     storage_options=storage_options,
+                    header=1,
                 )
             )
             df = pd.merge(df, p6_df, how="left", on="Serial number")
