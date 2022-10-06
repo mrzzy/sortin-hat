@@ -97,6 +97,7 @@ def pipeline(
         df = clean_extract(
             pd.read_excel(
                 f"gs://{raw_bucket}/{raw_s4_prefix}/{year}.xlsx",
+                dtype={"Sec4_SportsLevel": str},
                 storage_options=storage_options,
             )
         )
