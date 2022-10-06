@@ -97,7 +97,12 @@ def pipeline(
         # load & Clean data from excel spreadsheet(s)
         # override types explicitly where pandas type detection fails
         dtypes = {subject: str for subject in PSLE_SUBJECTS}
-        dtypes.update({"Sec4_SportsLevel": str})
+        dtypes.update(
+            {
+                "Sec4_SportsLevel": str,
+                "Course": str,
+            }
+        )
         storage_options = {"token": gcp_key_path}
         df = clean_extract(
             pd.read_excel(
