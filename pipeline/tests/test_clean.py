@@ -45,7 +45,7 @@ def test_clean_extract():
                 "missing": ["-", "0", 0],
                 "Serial number": [1, 2.0, 3],
                 "Sec4_BoardingStatus": np.arange(1, 4),
-                "Sec4_SportsLevel": ["L1", "1", "2A"],
+                "Sec4_SportsLevel": ["L1", "1", np.nan],
             }
         )
     )
@@ -57,4 +57,6 @@ def test_clean_extract():
     # check: 'Sec4_BoardingStatus' renamed to 'BoardingStatus'
     assert (df["BoardingStatus"] == np.arange(1, 4)).all()
     # check: leading 'L' in 'Sec4_SportsLevel' stripped
-    assert (df["Sec4_SportsLevel"] == np.array(["1", "1", "2A"])).all()
+    assert (df["Sec4_SportsLevel"][:2] == np.array(["1", "1"])).all() and np.isnan(
+        df["Sec4_SportsLevel"][2]
+    )
