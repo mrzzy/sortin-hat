@@ -15,6 +15,7 @@ from pendulum.tz import timezone
 from pendulum.tz.timezone import Timezone
 
 from clean import clean_extract, clean_p6
+from extract import PSLE_SUBJECTS
 from transform import suffix_subject_level
 
 TIMEZONE = "Asia/Singapore"
@@ -92,17 +93,23 @@ def pipeline(
 
         # data interval's year in local time zone
         year = data_interval_start.astimezone(timezone(timezone_str)).year
+
         # load & Clean data from excel spreadsheet(s)
+        # override types explicitly where pandas type detection fails
+        dtypes = {subject: str for subject in PSLE_SUBJECTS}
+        dtypes.update({"Sec4_SportsLevel": str})
         storage_options = {"token": gcp_key_path}
         df = clean_extract(
             pd.read_excel(
                 f"gs://{raw_bucket}/{raw_s4_prefix}/{year}.xlsx",
-                dtype={"Sec4_SportsLevel": str},
+                dtype=dtypes,
                 storage_options=storage_options,
             )
         )
+
         # suffix subjects columns with level the subject was taken
         df = suffix_subject_level(df, year)
+
         # merge in cleaned p6 data if it exists
         gcs = GCSHook()
         if gcs.exists(raw_bucket, f"{raw_p6_prefix}/{year}.xlsx"):
@@ -115,6 +122,7 @@ def pipeline(
                 )
             )
             df = pd.merge(df, p6_df, how="left", on="Serial number")
+
         # write transformed dataset as compressed parquet file
         dataset_path = f"gs://{datasets_bucket}/dataset_{year}.pq"
         df.to_parquet(dataset_path, storage_options=storage_options)
