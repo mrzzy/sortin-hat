@@ -69,32 +69,23 @@ def clean_p6(df: pd.DataFrame) -> pd.DataFrame:
         The prepared dataframe for model training.
     """
     # Clean dataframe
-    # fix name of serial no. column
+    # fix name of, drop missing values & fix type serial no. column
     df = df.rename(columns={"Unnamed: 0": "Serial number"})
-    # retify use of 'x' to indicate missing value.
     df["Serial number"] = df["Serial number"].replace("x", np.nan)
-    # drop rows with no serial number
+    # TODO(mrzzy): add warning
     df = df.dropna(subset=["Serial number"])
-    # fix type of serial no. column
     df["Serial number"] = df["Serial number"].astype(np.int_)
 
-    # select required columns
-    df = df[P6_COLUMNS]
-
     # drop unknown strings in Q1 M
-    # TODO(mrzzy): add warning
     df["Q1 M"] = pd.to_numeric(df["Q1 M"], errors="coerce")
+    # drop rows with no or Q1 M
+    # TODO(mrzzy): add warning
     df = df.dropna(subset=["Q1 M"])
 
+    # Select only required columns
+    df = df[P6_COLUMNS]
+
     return df
-
-
-EXTRACT_DTYPE_OVERRIDES = {
-    "Sec4_SportsLevel": np.str_,
-    "Course": np.str_,
-    "Serial number": np.int_,
-}
-EXTRACT_DTYPE_OVERRIDES.update({subject: np.str_ for subject in PSLE_SUBJECTS})
 
 
 def clean_extract(df: pd.DataFrame) -> pd.DataFrame:
@@ -112,12 +103,22 @@ def clean_extract(df: pd.DataFrame) -> pd.DataFrame:
     # parse "-" / 0 for missing value
     df = df.replace("-", np.nan).replace("0", np.nan).replace(0, np.nan)
     # override types explicitly where pandas type detection fails
-    df = df.astype(EXTRACT_DTYPE_OVERRIDES)
+    df["Sec4_SportsLevel"] = df["Sec4_SportsLevel"].fillna("").astype(np.str_)
+    df[PSLE_SUBJECTS] = df[PSLE_SUBJECTS].astype(np.str_)
+    df["Serial number"] = pd.to_numeric(df["Serial number"], errors="coerce")
+
+    # drop rows with missing serial no.
+    # TODO(mrzzy): add warning
+    df = df.dropna(subset=["Serial number"])
+    # drop rows with non-string course
+    df = df[[isinstance(v, str) for v in df["Course"]]]
+
+    # strip leading 'L' from level as some level's are missing leading 'L'
+    df["Sec4_SportsLevel"] = df["Sec4_SportsLevel"].str.replace("L", "")
+
     # rename 'Sec4_BoardingStatus' to 'BoardingStatus' as they appear to refer
     # to the same thing
     if "Sec4_BoardingStatus" in df.columns:
         df = df.rename(columns={"Sec4_BoardingStatus": "BoardingStatus"})
-    # strip leading 'L' from level as some level's are missing leading 'L'
-    df["Sec4_SportsLevel"] = df["Sec4_SportsLevel"].str.replace("L", "")
 
     return df

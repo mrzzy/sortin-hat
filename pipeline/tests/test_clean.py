@@ -7,8 +7,8 @@
 import numpy as np
 import pandas as pd
 
-from clean import EXTRACT_DTYPE_OVERRIDES, P6_COLUMNS, clean_extract, clean_p6
-from extract import PSLE_SUBJECTS
+from clean import P6_COLUMNS, clean_extract, clean_p6
+from extract import PSLE_MAPPING, PSLE_SUBJECTS
 
 SERIAL_NO = "Serial number"
 
@@ -41,28 +41,28 @@ def test_clean_p6():
 
 def test_clean_extract():
     data = {
-        "missing": ["-", "0", 0],
-        "Serial number": [1, 2.0, 3],
-        "Sec4_BoardingStatus": np.arange(1, 4),
-        "Sec4_SportsLevel": ["L1", "1", np.nan],
-        "Course": ["Express", 2, "Normal"],
+        "missing": ["-", "0", 0, "-", "0"],
+        "Serial number": [1, 2, 3, np.nan, 5],
+        "Sec4_BoardingStatus": list(range(1, 6)),
+        "Sec4_SportsLevel": ["L1", "1", np.nan, "L2", "L1"],
+        "Course": ["Express", "Express", "Normal", "Normal", 1],
     }
-    data.update({subject: np.arange(3) for subject in PSLE_SUBJECTS})
+    data.update({subject: list(PSLE_MAPPING.keys())[:5] for subject in PSLE_SUBJECTS})
     df = clean_extract(pd.DataFrame(data))
 
     # check: missing values are converted to nan
     assert df["missing"].isna().all()
     # check: dtypes overridden for specific columns
-    expected = [
-        (column, np.object_ if dtype == np.str_ else dtype)
-        for column, dtype in EXTRACT_DTYPE_OVERRIDES.items()
-    ]
-    for column, dtype in expected:
-        assert df[column].dtype == dtype
+    assert df["Sec4_SportsLevel"].dtype == np.object_
+    assert all([dtype == np.object_ for dtype in df[PSLE_SUBJECTS].dtypes])
 
-    # check: 'Sec4_BoardingStatus' renamed to 'BoardingStatus'
-    assert (df["BoardingStatus"] == np.arange(1, 4)).all()
+    # check: missing serial no. dropped
+    assert (df["Serial number"] == np.array([1, 2, 3])).all()
+    # check: bad course dropped.
+    assert (df["Course"] == np.array(["Express", "Express", "Normal"])).all()
+
     # check: leading 'L' in 'Sec4_SportsLevel' stripped
-    assert (df["Sec4_SportsLevel"][:2] == np.array(["1", "1"])).all() and np.isnan(
-        df["Sec4_SportsLevel"][2]
-    )
+    print(df["Sec4_SportsLevel"])
+    assert (df["Sec4_SportsLevel"] == np.array(["1", "1", ""])).all()
+    # check: 'Sec4_BoardingStatus' renamed to 'BoardingStatus'
+    assert not "Sec4_BoardingStatus" in df and "BoardingStatus" in df
