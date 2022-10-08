@@ -5,7 +5,7 @@
 #
 
 import json
-from typing import cast
+from typing import Dict, cast
 
 from airflow.decorators import dag, task
 from airflow.models.connection import Connection
@@ -17,11 +17,19 @@ from clean import clean_extract, clean_p6
 from transform import suffix_subject_level
 
 TIMEZONE = "Asia/Singapore"
-DAG_ID = "sortin-hat-pipeline"
+
+
+def pd_storage_opts(gcp_connection_id: str) -> Dict:
+    """Build Pandas storage options GCS I/O with the GCP connection specified by id."""
+    return {
+        "token": json.loads(
+            Connection.get_connection_from_secrets(gcp_connection_id).get_extra()  # type: ignore
+        )["extra__google_cloud_platform__key_path"]
+    }
 
 
 @dag(
-    dag_id=DAG_ID,
+    dag_id="sortin-hat-pipeline",
     description="Sortin-hat ML Pipeline",
     # each dag run handles a year-sized data interval from start_date
     start_date=datetime(2016, 1, 1, tz=timezone(TIMEZONE)),
@@ -61,6 +69,7 @@ def pipeline(
     MLFlow Models & Evaluation results from the ML training process stored in the
     `models_bucket` GCS bucket.
     """
+    # extract gcp service account json key path from airflow gcp connection
 
     @task(
         task_id="transform_dataset",
@@ -72,35 +81,25 @@ def pipeline(
         raw_p6_prefix: str,
         datasets_bucket: str,
         timezone_str: str,
-        data_interval_start: DateTime = cast(DateTime, None),
+        data_interval_end: DateTime = cast(DateTime, None),
     ) -> str:
         """
         Transform the Data source Excel Spreadsheets into Parquet Dataset.
         Both data source & dataset are partitioned by cohort year.
         Returns the path the Parquet Dataset in GCS.
         """
-        print("raw_bucket:", raw_bucket)
-        print("raw_s4_prefix:", raw_s4_prefix)
-        print("raw_p6_prefix:", raw_p6_prefix)
-        print("datasets_bucket:", datasets_bucket)
-        print("data_interval_start", data_interval_start)
         import pandas as pd
         from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
         # data interval's year in local time zone
-        year = data_interval_start.astimezone(timezone(timezone_str)).year
-
-        # extract gcp service account json key path from airflow gcp connection
-        gcp_key_path = json.loads(
-            Connection.get_connection_from_secrets(gcp_connection_id).get_extra()  # type: ignore
-        )["extra__google_cloud_platform__key_path"]
+        year = data_interval_end.astimezone(timezone(timezone_str)).year
 
         # load & Clean data from excel spreadsheet(s)
-        storage_options = {"token": gcp_key_path}
+        storage_opts = pd_storage_opts(gcp_connection_id)
         df = clean_extract(
             pd.read_excel(
                 f"gs://{raw_bucket}/{raw_s4_prefix}/{year}.xlsx",
-                storage_options=storage_options,
+                storage_options=storage_opts,
             )
         )
 
@@ -108,13 +107,13 @@ def pipeline(
         df = suffix_subject_level(df, year)
 
         # merge in cleaned p6 data if it exists
-        gcs = GCSHook()
+        gcs = GCSHook(gcp_connection_id)
         if gcs.exists(raw_bucket, f"{raw_p6_prefix}/{year}.xlsx"):
             p6_df = clean_p6(
                 pd.read_excel(
                     # header=1: headers are stored in p6 data on the second row
                     f"gs://{raw_bucket}/{raw_p6_prefix}/{year}.xlsx",
-                    storage_options=storage_options,
+                    storage_options=storage_opts,
                     header=1,
                 )
             )
@@ -122,9 +121,39 @@ def pipeline(
 
         # write transformed dataset as compressed parquet file
         dataset_path = f"gs://{datasets_bucket}/dataset_{year}.pq"
-        df.to_parquet(dataset_path, storage_options=storage_options)
+        df.to_parquet(dataset_path, storage_options=storage_opts)
 
         return dataset_path
+
+    @task(task_id="train_model")
+    def train_model(
+        gcp_connection_id: str,
+        datasets_bucket: str,
+        timezone_str: str,
+        start_date: DateTime = cast(DateTime, None),
+        data_interval_end: DateTime = cast(DateTime, None),
+    ):
+        """
+        Train as a Machine Learning model.
+        """
+        import pandas as pd
+        from airflow.providers.google.cloud.hooks.gcs import GCSHook
+
+        # convert timestamps into the local timezone
+        local_tz = timezone(timezone_str)
+        start_date = start_date.astimezone(local_tz)
+        data_interval_end = data_interval_end.astimezone(local_tz)
+
+        # read all dataset partitions from DAG's start date till the end of the data interval
+        gcs, storage_opts = GCSHook(), pd_storage_opts(gcp_connection_id)
+        partition_paths = [
+            f"gs://{datasets_bucket}/dataset_{year}.pq"
+            for year in range(start_date.year, data_interval_end.year)
+            if gcs.exists(datasets_bucket, f"dataset_{year}.pq")
+        ]
+        df = pd.concat(
+            [pd.read_parquet(p, storage_options=storage_opts) for p in partition_paths]
+        )
 
     transform_dataset(
         gcp_connection_id,
