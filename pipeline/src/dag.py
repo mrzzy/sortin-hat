@@ -12,17 +12,16 @@ from airflow.models.connection import Connection
 from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
-from pendulum.tz.timezone import Timezone
 
 from clean import clean_extract, clean_p6
-from extract import PSLE_SUBJECTS
 from transform import suffix_subject_level
 
 TIMEZONE = "Asia/Singapore"
+DAG_ID = "sortin-hat-pipeline"
 
 
 @dag(
-    dag_id="sortin-hat-pipeline",
+    dag_id=DAG_ID,
     description="Sortin-hat ML Pipeline",
     # each dag run handles a year-sized data interval from start_date
     start_date=datetime(2016, 1, 1, tz=timezone(TIMEZONE)),
@@ -35,14 +34,15 @@ def pipeline(
     datasets_bucket: str = "sss-sortin-hat-datasets",
     models_bucket: str = "sss-sortin-hat-models",
     timezone_str: str = TIMEZONE,
+    gcp_connection_id="google_cloud_default",
 ):
-    """
+    f"""
     # Sortin-hat ML Pipeline
     End to End Pipeline for training Sortin-hat ML models for predicting student scores.
 
     ## Prerequisites
     ### Connections
-    Expects a GCP connection to be configured with the id `google_cloud_default`
+    Expects a GCP connection to be configured with the under the id `gcp_connection_id`
     with extra for keyfile json set.
 
     ### Infrastructure
@@ -62,15 +62,11 @@ def pipeline(
     `models_bucket` GCS bucket.
     """
 
-    # extract gcp service account json key path from airflow gcp connection
-    gcp_key_path = json.loads(
-        Connection.get_connection_from_secrets("google_cloud_default").get_extra()  # type: ignore
-    )["extra__google_cloud_platform__key_path"]
-
     @task(
         task_id="transform_dataset",
     )
     def transform_dataset(
+        gcp_connection_id: str,
         raw_bucket: str,
         raw_s4_prefix: str,
         raw_p6_prefix: str,
@@ -94,20 +90,16 @@ def pipeline(
         # data interval's year in local time zone
         year = data_interval_start.astimezone(timezone(timezone_str)).year
 
+        # extract gcp service account json key path from airflow gcp connection
+        gcp_key_path = json.loads(
+            Connection.get_connection_from_secrets(gcp_connection_id).get_extra()  # type: ignore
+        )["extra__google_cloud_platform__key_path"]
+
         # load & Clean data from excel spreadsheet(s)
-        # override types explicitly where pandas type detection fails
-        dtypes = {subject: str for subject in PSLE_SUBJECTS}
-        dtypes.update(
-            {
-                "Sec4_SportsLevel": str,
-                "Course": str,
-            }
-        )
         storage_options = {"token": gcp_key_path}
         df = clean_extract(
             pd.read_excel(
                 f"gs://{raw_bucket}/{raw_s4_prefix}/{year}.xlsx",
-                dtype=dtypes,
                 storage_options=storage_options,
             )
         )
@@ -135,7 +127,12 @@ def pipeline(
         return dataset_path
 
     transform_dataset(
-        raw_bucket, raw_s4_prefix, raw_p6_prefix, datasets_bucket, timezone_str
+        gcp_connection_id,
+        raw_bucket,
+        raw_s4_prefix,
+        raw_p6_prefix,
+        datasets_bucket,
+        timezone_str,
     )
 
 
