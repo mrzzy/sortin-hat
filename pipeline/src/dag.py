@@ -4,18 +4,14 @@
 # Airflow DAG
 #
 
-import json
-from typing import Dict, cast
+from typing import Dict, Iterable, cast
 
+import pandas as pd
 from airflow.decorators import dag, task
 from airflow.models.connection import Connection
 from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
-
-from clean import clean_extract, clean_p6
-from extract import extract_features
-from transform import suffix_subject_level
 
 TIMEZONE = "Asia/Singapore"
 DAG_ID = "sortin-hat-pipeline"
@@ -74,6 +70,7 @@ def pipeline(
     models_bucket: str = "sss-sortin-hat-models",
     timezone_str: str = TIMEZONE,
     gcp_connection_id="google_cloud_default",
+    mlflow_experiment_id: str = "sss-score-prediction",
 ):
     f"""
     # Sortin-hat ML Pipeline
@@ -94,13 +91,22 @@ def pipeline(
     - Sec 4 Cohort Sendout, stored as `raw_s4_prefix/<YEAR>.xlsx`
     - Optional P6 Screening Template, stored as `raw_p6_prefix/<YEAR>.xlsx`
 
-    The pipeline assumes that all dates / times are expressed in the Asia/Singapore time zone.
+    > An assumption is made that all dates are expressed in the Asia/Singapore time zone.
+
+    ## Machine Learning
+    ### Cross Validation
+    Sound ML practice dictates that we train model on a Training set &
+    cross validate our result on an hold out Test set:
+    - Training : All data leading up, but excluding the current year's partition.
+    - Test set: The current year's partition.
+
+    > Current year is defined as the year the data interval the pipeline DAG run
+    is processing.
 
     ## Outputs
     MLFlow Models & Evaluation results from the ML training process stored in the
     `models_bucket` GCS bucket.
     """
-    # extract gcp service account json key path from airflow gcp connection
 
     @task(
         task_id="transform_dataset",
@@ -111,21 +117,25 @@ def pipeline(
         raw_s4_prefix: str,
         raw_p6_prefix: str,
         datasets_bucket: str,
+        dataset_prefix: str,
         timezone_str: str,
-        data_interval_end: DateTime = cast(DateTime, None),
-    ) -> str:
+        data_interval_start: DateTime = cast(DateTime, None),
+    ):
+        # TODO(mrzzy): unit test
         """
-        Transform the Data source Excel Spreadsheets into Parquet Dataset.
-        Both data source & dataset are partitioned by cohort year.
-        Returns the path the Parquet Dataset in GCS.
+        Transform the Data source Excel Spreadsheets into Parquet Dataset of
+        ML model tailored Features.
+        Both data source & dataset are partitioned by cohort year
+        Writes the Parquet dataset in GCS.
         """
-        import pandas as pd
         from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
-        # data interval's year in local time zone
-        year = data_interval_end.astimezone(timezone(timezone_str)).year
+        from clean import clean_extract, clean_p6
+        from extract import extract_features
+        from transform import suffix_subject_level
 
         # load & Clean data from excel spreadsheet(s)
+        year = local_year(data_interval_start)
         storage_opts = pd_storage_opts(gcp_connection_id)
         df = clean_extract(
             pd.read_excel(
@@ -150,48 +160,86 @@ def pipeline(
             )
             df = pd.merge(df, p6_df, how="left", on="Serial number")
 
+        # extract features suitable for ML models from data
+        df = extract_features(df)
+
         # write transformed dataset as compressed parquet file
-        dataset_path = f"gs://{datasets_bucket}/dataset_{year}.pq"
-        df.to_parquet(dataset_path, storage_options=storage_opts)
-
-        return dataset_path
-
-    @task(task_id="train_model")
-    def train_model(
-        gcp_connection_id: str,
-        datasets_bucket: str,
-        timezone_str: str,
-        start_date: DateTime = cast(DateTime, None),
-        data_interval_end: DateTime = cast(DateTime, None),
-    ):
-        """
-        Train as a Machine Learning model.
-        """
-        import pandas as pd
-        from airflow.providers.google.cloud.hooks.gcs import GCSHook
-
-        # convert timestamps into the local timezone
-        local_tz = timezone(timezone_str)
-        start_date = start_date.astimezone(local_tz)
-        data_interval_end = data_interval_end.astimezone(local_tz)
-
-        # read all dataset partitions from DAG's start date till the end of the data interval
-        gcs, storage_opts = GCSHook(), pd_storage_opts(gcp_connection_id)
-        partition_paths = [
-            f"gs://{datasets_bucket}/dataset_{year}.pq"
-            for year in range(start_date.year, data_interval_end.year)
-            if gcs.exists(datasets_bucket, f"dataset_{year}.pq")
-        ]
-        df = pd.concat(
-            [pd.read_parquet(p, storage_options=storage_opts) for p in partition_paths]
+        df.to_parquet(
+            f"gs://{datasets_bucket}/{dataset_prefix}/{year}.pq",
+            storage_options=storage_opts,
         )
 
+    @task(task_id="experiment_models")
+    def experiment_models(
+        gcp_connection_id: str,
+        datasets_bucket: str,
+        dataset_prefix: str,
+        timezone_str: str,
+        mlflow_experiment_id: str,
+        start_date: DateTime = cast(DateTime, None),
+        data_interval_start: DateTime = cast(DateTime, None),
+    ):
+        # TODO(mrzzy): run on ray cluster
+        """
+        Experiment by Training & Evaluating Machine Learning models.
+
+        Trains multiple models on the Training set with different hyperparameters
+        in order to experiment with Hyperparamter combinations:
+        - Feature Preprocessing methods used.
+        - Model-specific Hyperparameters.
+        and uses K-fold cross validation to perform hyperparameter tuning.
+
+        Logs each tuning Experiment to MLFlow for later evaluation.
+        """
+        import numpy as np
+        import pandas as pd
+        from sklearn.compose import ColumnTransformer
+        from sklearn.impute import KNNImputer
+        from sklearn.preprocessing import StandardScaler
+
+        # collate training set from dataset partitions:
+        # all partitions before the current data interval
+        train_df = load_dataset(
+            gcp_connection_id,
+            datasets_bucket,
+            dataset_prefix,
+            range(local_year(start_date), local_year(data_interval_start)),
+        )
+
+        from sklearn.linear_model import ElasticNet
+        from sklearn.multioutput import MultiOutputRegressor, cross_val_predict
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import OneHotEncoder
+
+        model = Pipeline(
+            steps=[
+                ColumnTransformer(
+                    transformers=[
+                        (
+                            "categorical",
+                            OneHotEncoder(drop="if_binary"),
+                            train_df.select_dtypes(include="object").to_list(),
+                        ),
+                        (
+                            "numeric",
+                            StandardScaler(),
+                            train_df.select_dtypes(include="number").to_list(),
+                        ),
+                    ],
+                    remainder="passthrough",
+                ),
+                MultiOutputRegressor(ElasticNet()),
+            ]
+        )
+
+    dataset_prefix = "dataset"
     transform_dataset(
         gcp_connection_id,
         raw_bucket,
         raw_s4_prefix,
         raw_p6_prefix,
         datasets_bucket,
+        dataset_prefix,
         timezone_str,
     )
 
