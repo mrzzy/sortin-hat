@@ -14,22 +14,53 @@ from pendulum.datetime import DateTime
 from pendulum.tz import timezone
 
 from clean import clean_extract, clean_p6
+from extract import extract_features
 from transform import suffix_subject_level
 
 TIMEZONE = "Asia/Singapore"
+DAG_ID = "sortin-hat-pipeline"
 
 
 def pd_storage_opts(gcp_connection_id: str) -> Dict:
     """Build Pandas storage options GCS I/O with the GCP connection specified by id."""
+    # extract gcp service account json key path from airflow gcp connection
     return {
-        "token": json.loads(
-            Connection.get_connection_from_secrets(gcp_connection_id).get_extra()  # type: ignore
-        )["extra__google_cloud_platform__key_path"]
+        "token": (
+            Connection.get_connection_from_secrets(gcp_connection_id).extra_dejson[
+                "extra__google_cloud_platform__key_path"
+            ]
+        )
     }
 
 
+def local_year(timestamp: DateTime, local_tz: str = TIMEZONE) -> int:
+    """Obtain the year of the given datetime in the local time zone."""
+    return timestamp.astimezone(timezone(local_tz)).year
+
+
+def load_dataset(
+    gcp_connection_id: str,
+    datasets_bucket: str,
+    dataset_prefix: str,
+    years: Iterable[int],
+) -> pd.DataFrame:
+    """
+    Load the yearly-partitioned Sortin-Hat Dataset as single DataFrame.
+    'years' specifies which year's paritions should be included in the DataFrame.
+    """
+    return pd.concat(
+        [
+            pd.read_parquet(
+                f"gs://{datasets_bucket}/{dataset_prefix}/{year}.pq",
+                storage_options=pd_storage_opts(gcp_connection_id),
+            )
+            for year in years
+        ]
+    )
+
+
 @dag(
-    dag_id="sortin-hat-pipeline",
+    dag_id=DAG_ID,
     description="Sortin-hat ML Pipeline",
     # each dag run handles a year-sized data interval from start_date
     start_date=datetime(2016, 1, 1, tz=timezone(TIMEZONE)),

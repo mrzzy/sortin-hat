@@ -9,6 +9,7 @@ from typing import Any, Dict
 
 import numpy as np
 import pytest
+from airflow.models.connection import Connection
 
 DUMMY_PREFIX = "dummy_"
 
@@ -24,3 +25,12 @@ def dummy_data() -> Dict[str, Any]:
     }  # type: Dict[str, Any]
     data.update({f"{DUMMY_PREFIX}num_{i}": np.arange(3) for i in range(3)})
     return data
+
+
+@pytest.fixture
+def gcp_connection() -> Connection:
+    return Connection(
+        conn_id="google_cloud_default",
+        conn_type="google-cloud-platform",
+        extra={"extra__google_cloud_platform__key_path": "key.json"},
+    )
