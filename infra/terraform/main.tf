@@ -124,7 +124,7 @@ resource "google_container_node_pool" "infra" {
   node_count = 1
 
   node_config {
-    machine_type    = "e2-standard-4"
+    machine_type    = "e2-standard-4" # 2vCPU, 4GB RAM
     service_account = google_service_account.k8s_node.email
     disk_size_gb    = 30
   }
