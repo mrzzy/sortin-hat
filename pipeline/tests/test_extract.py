@@ -87,9 +87,3 @@ def test_extract_features(dummy_data: Dict[str, Any]):
         .all()
         .all()
     )
-
-    # check: one hot encoding of categorical columns
-    cat_cols = [name for name in df.columns if "dummy_cat" in name]
-    assert len(cat_cols) > 0
-    for key, cols in groupby(cat_cols, lambda name: name[:-2]):
-        assert all([f"{key}_{i}" == name for i, name in enumerate(cols)])

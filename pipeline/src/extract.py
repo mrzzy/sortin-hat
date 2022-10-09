@@ -87,11 +87,4 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     df["ResidentialType"] = map_values(df["ResidentialType"], HOUSING_MAPPING)
     df[PSLE_SUBJECTS] = map_values(df[PSLE_SUBJECTS], PSLE_MAPPING)
 
-    # replace rest of the categorical columns with a one-hot encoding as there
-    # are no ordering dependencies between levels
-    # TODO(mrzzy): use Sklearn implementation
-    category_cols = df.dtypes[df.dtypes == np.dtype("O")].index
-    if len(category_cols) > 1:
-        encodings = pd.get_dummies(df[category_cols])
-        df = df.drop(columns=category_cols).join(encodings)
     return df
