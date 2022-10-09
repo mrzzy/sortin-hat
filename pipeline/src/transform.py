@@ -83,3 +83,37 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
         for col in year_columns[year_result]
     }
     return df.rename(columns=rename_map)
+
+
+def unpivot_subjects(df: pd.DataFrame, year: int) -> pd.DataFrame:
+    """
+    Unpivot the subject columns in the given DataFrame of student results into
+    'subject' & 'score' columns.
+
+    Extracts the secondary level subject was taken into the 'level' column.
+    Removes empty scores (ie. student did not take the subject).
+
+    Args:
+        df:
+            DataFrame to unpivot. Expects a '<year> Results' column that demarcates
+            the start of subject columns.
+        year:
+            The cohort year of the students of which the given results in the
+            DataFrame belong to.
+    Returns:
+        Returns the unpivoted DataFrame.
+    """
+    # unpivot all columns left of year results column, assuming that they are subject scores
+    results_pos = df.columns.to_list().index(f"{year} Results")
+    df = (
+        # drop empty results columns
+        df.drop(columns=[c for c in df.columns if " Results" in c]).melt(
+            id_vars=df.columns[:results_pos].values,
+            var_name="Subject",
+            value_name="Score",
+        )
+    )
+    # extract secondary level into into its own column
+    df["Level"] = df["Subject"].str.extract(r"\[S(\d)\]", expand=False)
+    # drop missing scores
+    return df.dropna(subset=["Score"])

@@ -13,6 +13,8 @@ from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
 
+from transform import unpivot_subjects
+
 TIMEZONE = "Asia/Singapore"
 DAG_ID = "sortin-hat-pipeline"
 
@@ -144,8 +146,9 @@ def pipeline(
             )
         )
 
-        # suffix subjects columns with level the subject was taken
+        # apply transforms to data
         df = suffix_subject_level(df, year)
+        df = unpivot_subjects(df, year)
 
         # merge in cleaned p6 data if it exists
         gcs = GCSHook(gcp_connection_id)

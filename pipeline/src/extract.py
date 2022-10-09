@@ -6,7 +6,6 @@
 
 from typing import Any, Dict, Union
 
-import numpy as np
 import pandas as pd
 
 # feature extraction mappings
