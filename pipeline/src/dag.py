@@ -46,11 +46,19 @@ def load_dataset(
     Load the yearly-partitioned Sortin-Hat Dataset as single DataFrame.
     'years' specifies which year's paritions should be included in the DataFrame.
     """
+
+    def add_year(df: pd.DataFrame, year: int) -> pd.DataFrame:
+        df["Year"] = year
+        return df
+
     return pd.concat(
         [
-            pd.read_parquet(
-                f"gs://{datasets_bucket}/{dataset_prefix}/{year}.pq",
-                storage_options=pd_storage_opts(gcp_connection_id),
+            add_year(
+                pd.read_parquet(
+                    f"gs://{datasets_bucket}/{dataset_prefix}/{year}.pq",
+                    storage_options=pd_storage_opts(gcp_connection_id),
+                ),
+                year,
             )
             for year in years
         ]

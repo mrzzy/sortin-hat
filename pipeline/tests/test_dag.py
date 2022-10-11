@@ -37,30 +37,32 @@ def test_load_dataset(dummy_data: Dict[str, Any], gcp_connection: Connection):
         "pandas.read_parquet",
         return_value=pd.DataFrame(dummy_data),
     ) as read_parquet:
-        bucket, prefix, years = "bucket", "prefix", [2016, 2017]
+        bucket, prefix, year = "bucket", "prefix", 2016
         gcp_id = str(gcp_connection.id)
 
         # check: paritions merged into one dataframe
+        expect_df = pd.DataFrame(dummy_data)
+        expect_df["Year"] = year
+
         assert (
             (
                 load_dataset(
                     gcp_id,
                     datasets_bucket=bucket,
                     dataset_prefix=prefix,
-                    years=years,
+                    years=[year],
                 )
-                == pd.concat([pd.DataFrame(dummy_data) for _ in range(2)])
+                == expect_df
             )
             .all()
             .all()
         )
 
         # check: read_parquet called with correct args
-        for year in years:
-            read_parquet.assert_any_call(
-                f"gs://{bucket}/{prefix}/{year}.pq",
-                storage_options=pd_storage_opts(gcp_id),
-            )
+        read_parquet.assert_any_call(
+            f"gs://{bucket}/{prefix}/{year}.pq",
+            storage_options=pd_storage_opts(gcp_id),
+        )
 
 
 def test_pipeline_dag_import():
