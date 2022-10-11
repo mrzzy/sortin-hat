@@ -13,6 +13,7 @@ from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
 
+from extract import extract_features, vectorize_features
 from transform import unpivot_subjects
 
 TIMEZONE = "Asia/Singapore"
@@ -194,53 +195,40 @@ def pipeline(
         in order to experiment with hyperparameter combinations:
         - Feature Preprocessing methods used.
         - Model-specific Hyperparameters.
-        and uses K-fold cross validation to perform hyperparameter tuning.
 
-        Logs each tuning Experiment to MLFlow for later evaluation.
+        To avoid time leakage, dataset split is selected by cohort year (relative
+        to the DAG processed data interval's year):
+        - Training Set meant for fitting models includes all data up to
+            & including the 3rd latest cohort year.
+        - Validation Set consists of the 2nd latest cohort year. It is used
+            for hyperparameter tuning.
+        - Test Set consists the latest cohort year. It is used for unbiased
+            estimate of final model performance.
         """
-        import numpy as np
-        import pandas as pd
-        from sklearn.compose import ColumnTransformer
-        from sklearn.impute import KNNImputer
-        from sklearn.preprocessing import StandardScaler
-
-        # collate training set from dataset partitions:
-        # all partitions before the current data interval
-        train_df = load_dataset(
-            gcp_connection_id,
-            datasets_bucket,
-            dataset_prefix,
-            range(local_year(start_date), local_year(data_interval_start)),
+        # verify we have enough partitions to split dataset into train/validate/test
+        begin_year, current_year = local_year(start_date), local_year(
+            data_interval_start
         )
 
-        # extract features suitable for ML models from data
-        df = extract_features(df)
+        n_partitions = current_year - begin_year
+        if n_partitions < 3:
+            raise RuntimeError(
+                f"DAG Data Interval too small: expected >3 partitions, got {n_partitions}"
+            )
 
-        from sklearn.linear_model import ElasticNet
-        from sklearn.multioutput import MultiOutputRegressor, cross_val_predict
-        from sklearn.pipeline import Pipeline
-        from sklearn.preprocessing import OneHotEncoder
-
-        model = Pipeline(
-            steps=[
-                ColumnTransformer(
-                    transformers=[
-                        (
-                            "categorical",
-                            OneHotEncoder(drop="if_binary"),
-                            train_df.select_dtypes(include="object").to_list(),
-                        ),
-                        (
-                            "numeric",
-                            StandardScaler(),
-                            train_df.select_dtypes(include="number").to_list(),
-                        ),
-                    ],
-                    remainder="passthrough",
-                ),
-                MultiOutputRegressor(ElasticNet()),
-            ]
+        # collate train/validate/test datasets
+        load_years = lambda years: load_dataset(
+            gcp_connection_id, datasets_bucket, dataset_prefix, years
         )
+        train_df = load_years(range(begin_year, current_year - 1))
+        validate_df = load_years([current_year - 1])
+        test_df = load_years([current_year])
+
+        # extract features vectors for ML models from datasets
+        prepare_features = lambda df: vectorize_features(extract_features(df))
+        train_features = prepare_features(train_df)
+        validate_features = prepare_features(validate_df)
+        test_features = prepare_features(test_df)
 
     dataset_prefix = "dataset"
     transform_dataset(

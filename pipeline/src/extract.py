@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 from sklearn.base import TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sqlalchemy.engine.cursor import _NoResultMetaData
 
 # feature extraction mappings
 PSLE_SUBJECTS = ["EL", "MT", "Maths", "Sci", "HMT"]
@@ -109,6 +110,4 @@ def vectorize_features(df: pd.DataFrame) -> NDArray[np.float_]:
             ("numeric", StandardScaler(), df.select_dtypes(include="number").columns),
         ],
         remainder="passthrough",
-    ).fit_transform(
-        df
-    )  # type: ignore
+    ).fit_transform(df)
