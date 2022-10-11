@@ -3,13 +3,11 @@
 # Transform Data Unit Tests
 #
 
-import re
 from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
 import pytest
-from conftest import DUMMY_PREFIX
 
 from transform import suffix_subject_level, unpivot_subjects
 
@@ -83,4 +81,4 @@ def test_unpivot_subjects(subject_df: pd.DataFrame, dummy_data: Dict[str, Any]):
     # check: missing scores dropped
     assert not df["Score"].isna().any()
     # check: secondary level extracted as "Level" column
-    assert df["Level"] == df["Subject"].extract(r"\[S(\d)\]", expand=False)
+    assert (df["Level"] == df["Subject"].str.extract(r"\[S(\d)\]", expand=False)).all()

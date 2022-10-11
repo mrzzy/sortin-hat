@@ -162,10 +162,6 @@ def pipeline(
                 )
             )
             df = pd.merge(df, p6_df, how="left", on="Serial number")
-
-        # extract features suitable for ML models from data
-        df = extract_features(df)
-
         # write transformed dataset as compressed parquet file
         df.to_parquet(
             f"gs://{datasets_bucket}/{dataset_prefix}/{year}.pq",
@@ -187,7 +183,7 @@ def pipeline(
         Experiment by Training & Evaluating Machine Learning models.
 
         Trains multiple models on the Training set with different hyperparameters
-        in order to experiment with Hyperparamter combinations:
+        in order to experiment with hyperparameter combinations:
         - Feature Preprocessing methods used.
         - Model-specific Hyperparameters.
         and uses K-fold cross validation to perform hyperparameter tuning.
@@ -208,6 +204,9 @@ def pipeline(
             dataset_prefix,
             range(local_year(start_date), local_year(data_interval_start)),
         )
+
+        # extract features suitable for ML models from data
+        df = extract_features(df)
 
         from sklearn.linear_model import ElasticNet
         from sklearn.multioutput import MultiOutputRegressor, cross_val_predict

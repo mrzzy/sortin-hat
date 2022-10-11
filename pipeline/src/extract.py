@@ -4,9 +4,14 @@
 # Feature Extraction
 #
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Tuple, Union
 
+import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
+from sklearn.base import TransformerMixin
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 # feature extraction mappings
 PSLE_SUBJECTS = ["EL", "MT", "Maths", "Sci", "HMT"]
@@ -73,6 +78,7 @@ def map_values(
 
 
 def extract_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Extract feature vector suitable for ML models from the given dataframe."""
     # extract categorical features using feature extraction mappings
     df["Sec4_CardingLevel"] = map_values(
         df["Sec4_CardingLevel"], CARDING_MAPPING, default=False
@@ -87,3 +93,22 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     df[PSLE_SUBJECTS] = map_values(df[PSLE_SUBJECTS], PSLE_MAPPING)
 
     return df
+
+
+def vectorize_features(df: pd.DataFrame) -> NDArray[np.float_]:
+    """Vectorize dataframe into feature vectors."""
+    return ColumnTransformer(
+        transformers=[
+            # one hot encode categorical columns
+            (
+                "categorical",
+                OneHotEncoder(),
+                df.select_dtypes(include="object").columns,
+            ),
+            # standard scale numeric columns
+            ("numeric", StandardScaler(), df.select_dtypes(include="number").columns),
+        ],
+        remainder="passthrough",
+    ).fit_transform(
+        df
+    )  # type: ignore
