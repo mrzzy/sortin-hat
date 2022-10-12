@@ -47,14 +47,14 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def save(self, path: Path):
-        """Store the Model at the given path in the MLFlow model's format."""
+    def save(self, dir_path: str):
+        """Store the Model in the directory given path in the MLFlow model's format."""
         pass
 
     @classmethod
     @abstractmethod
-    def load(cls, path: Path):
-        """Restore a Model from the MLFlow model at the given path."""
+    def load(cls, dir_path: str):
+        """Restore a Model from the direction at given path in MLFlow Model format."""
         pass
 
 
@@ -66,13 +66,18 @@ class LinearRegression(Model):
 
     @staticmethod
     def param_space() -> Dict:
-        return  # TODO:
+        return {
+            "l2_regularization": tune.loguniform(1e-6, 1),
+            "l1_regularization": tune.loguniform(1e-6, 1),
+        }
 
     @classmethod
-    def build(self, params: Dict):
-        self.model = ElasticNet(
-            alpha=params["l2_regularize"],
-            l1_ratio=params["l1_regularize"],
+    def build(cls, params: Dict):
+        return cls(
+            ElasticNet(
+                alpha=params["l2_regularization"],
+                l1_ratio=params["l1_regularization"],
+            )
         )
 
     def fit(self, features: NDArray[np.float_], labels: NDArray[np.float_]):
@@ -81,10 +86,10 @@ class LinearRegression(Model):
     def predict(self, features: NDArray[np.float_]) -> NDArray[np.float_]:
         return self.model.predict(features)
 
-    def save(self, path: Path):
-        sklearn.save_model(self.model, path.as_posix())
+    def save(self, dir_path: str):
+        sklearn.save_model(self.model, path)
         self.model.get_params()
 
     @classmethod
-    def load(cls, path: Path):
-        return cls(sklearn.load_model(path.as_posix()))
+    def load(cls, dir_path: str):
+        return cls(sklearn.load_model(path))
