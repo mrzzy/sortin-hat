@@ -5,14 +5,12 @@
 #
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 from typing import Dict
 
 import numpy as np
 from mlflow import sklearn
 from numpy.typing import NDArray
 from ray import tune
-from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.linear_model import ElasticNet
 
 
@@ -93,3 +91,6 @@ class LinearRegression(Model):
     @classmethod
     def load(cls, dir_path: str):
         return cls(sklearn.load_model(dir_path))
+
+
+MODELS = {"Linear Regression": LinearRegression}

@@ -12,8 +12,10 @@ from airflow.models.connection import Connection
 from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
+from ray import tune
+from sklearn.metrics import mean_squared_error, r2_score
 
-from extract import extract_features, vectorize_features
+from extract import extract_features, featurize_dataset, vectorize_features
 from model import MODELS
 from transform import unpivot_subjects
 
@@ -186,7 +188,7 @@ def pipeline(
         )
 
     @task(depends_on_past=True)
-    def experiment_model(
+    def train_tuned_model(
         model_name: str,
         gcp_connection_id: str,
         datasets_bucket: str,
@@ -198,9 +200,7 @@ def pipeline(
     ):
         # TODO(mrzzy): run on ray cluster
         f"""
-        Experiment by Training & Evaluating an {model_name} model.
-
-        Trains multiple models on the Training set with different hyperparameters
+        Trains multiple {model_name} models on the Training set with different hyperparameters
         in order to experiment with hyperparameter combinations:
         - Feature Preprocessing methods used.
         - Model-specific Hyperparameters.
@@ -225,24 +225,41 @@ def pipeline(
                 f"DAG Data Interval too small: expected >3 partitions, got {n_partitions}"
             )
 
-        # collate train/validate/test datasets
-        load_years = lambda years: load_dataset(
-            gcp_connection_id, datasets_bucket, dataset_prefix, years
-        )
-        train_df = load_years(range(begin_year, current_year - 1))
-        validate_df = load_years([current_year - 1])
-        test_df = load_years([current_year])
+        def objective(params: Dict):
+            # load train, validate & test datasets
+            load_years = lambda years: load_dataset(
+                gcp_connection_id, datasets_bucket, dataset_prefix, years
+            )
+            train_features, train_targets = featurize_dataset(
+                load_years(range(begin_year, current_year - 1))
+            )
+            validate_features, validate_targets = featurize_dataset(
+                load_years([current_year - 1])
+            )
+            test_features, test_targets = featurize_dataset(load_years([current_year]))
 
-        # split input features from target values
-        train_feature_df, train_targets = split_features_labels(train_df)
-        validate_feature_df, validate_targets = split_features_labels(validate_df)
-        test_feature_df, test_targets = split_features_labels(test_df)
+            # train model on training set
+            model = MODELS[model_name].build(params)
+            model.fit(train_features, train_targets)
 
-        # extract features vectors for ML models from datasets
-        prepare_features = lambda df: vectorize_features(extract_features(df))
-        train_features = prepare_features(train_feature_df)
-        validate_features = prepare_features(validate_feature_df)
-        test_features = prepare_features(test_feature_df)
+            # evaluate model fit using metrics
+            metrics = {
+                "rmse": lambda features, targets: mean_squared_error(
+                    features, targets, squared=False
+                ),
+                "r2": r2_score,
+            }
+            subsets = {
+                "train": (train_features, train_targets),
+                "validate": (validate_features, validate_targets),
+                "test": (test_features, test_targets),
+            }
+            results = {
+                f"{subset}_{metric}": metric_fn(*data)
+                for subset, data in subsets.items()
+                for metric, metric_fn in metrics.items()
+            }
+            tune.report(**results)
 
     dataset_prefix = "dataset"
     transform_dataset(
