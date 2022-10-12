@@ -37,6 +37,7 @@ def subject_df(dummy_data: Dict[str, Any]) -> pd.DataFrame:
     return pd.DataFrame(test_data)
 
 
+@pytest.mark.unit
 def test_suffix_subject_level(subject_df: pd.DataFrame, dummy_data: Dict[str, Any]):
     df = suffix_subject_level(subject_df, COHORT_YEAR)
 
@@ -63,6 +64,7 @@ def test_suffix_subject_level(subject_df: pd.DataFrame, dummy_data: Dict[str, An
         )
 
 
+@pytest.mark.unit
 def test_unpivot_subjects(subject_df: pd.DataFrame, dummy_data: Dict[str, Any]):
     subject_cols = [column for column in subject_df.columns if "." in column]
     # suffix subject levels to test data

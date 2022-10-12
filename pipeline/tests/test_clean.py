@@ -6,6 +6,7 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from clean import P6_COLUMNS, clean_extract, clean_p6
 from extract import PSLE_MAPPING, PSLE_SUBJECTS
@@ -13,6 +14,7 @@ from extract import PSLE_MAPPING, PSLE_SUBJECTS
 SERIAL_NO = "Serial number"
 
 
+@pytest.mark.unit
 def test_clean_p6():
     # test values designed to test cleaning operations
     n_rows = 4
@@ -39,6 +41,7 @@ def test_clean_p6():
     assert (df["Q1 M"] == pd.Series([3, 4], name="Q1 M")).all()
 
 
+@pytest.mark.unit
 def test_clean_extract():
     data = {
         "missing": ["-", "0", 0, "-", "0"],

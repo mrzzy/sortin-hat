@@ -87,9 +87,9 @@ class LinearRegression(Model):
         return self.model.predict(features)
 
     def save(self, dir_path: str):
-        sklearn.save_model(self.model, path)
+        sklearn.save_model(self.model, dir_path)
         self.model.get_params()
 
     @classmethod
     def load(cls, dir_path: str):
-        return cls(sklearn.load_model(path))
+        return cls(sklearn.load_model(dir_path))

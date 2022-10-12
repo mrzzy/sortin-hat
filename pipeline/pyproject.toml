@@ -2,5 +2,9 @@
 pythonpath = [
   "src"
 ]
+markers = [
+    "unit: Mark unit tests.",
+    "integration: Mark integration tests."
+]
 [tool.isort]
 profile = "black"

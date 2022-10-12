@@ -4,11 +4,12 @@
 # Feature Extraction
 #
 
-from itertools import cycle, groupby, islice
+from itertools import cycle, islice
 from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
+import pytest
 from sklearn.preprocessing import StandardScaler
 
 from extract import (
@@ -25,6 +26,7 @@ from extract import (
 )
 
 
+@pytest.mark.unit
 def test_map_values():
     test_df = pd.DataFrame(
         {
@@ -53,6 +55,7 @@ def test_map_values():
     assert (map_values(test_df["A"], mapping)[1:] == np.array([1.0, 99.0])).all()
 
 
+@pytest.mark.unit
 def test_extract_features(dummy_data: Dict[str, Any]):
     n_keys = lambda mapping, n: list(islice(cycle(mapping.keys()), n))
     test_data = {
@@ -91,6 +94,7 @@ def test_extract_features(dummy_data: Dict[str, Any]):
     )
 
 
+@pytest.mark.unit
 def test_vectorize_features(dummy_data: Dict[str, Any]):
     df = pd.DataFrame(dummy_data)
 

@@ -10,12 +10,14 @@ from pathlib import Path
 from typing import Any, Dict
 
 import pandas as pd
+import pytest
 from airflow.models.connection import Connection
 from airflow.models.dagbag import DagBag
 
 from dag import DAG_ID, load_dataset, pd_storage_opts
 
 
+@pytest.mark.unit
 def test_pd_storage_opts(gcp_connection: Connection):
     with mock.patch(
         "airflow.models.connection.Connection.get_connection_from_secrets",
@@ -29,6 +31,7 @@ def test_pd_storage_opts(gcp_connection: Connection):
         }
 
 
+@pytest.mark.unit
 def test_load_dataset(dummy_data: Dict[str, Any], gcp_connection: Connection):
     with mock.patch(
         "airflow.models.connection.Connection.get_connection_from_secrets",
@@ -65,6 +68,7 @@ def test_load_dataset(dummy_data: Dict[str, Any], gcp_connection: Connection):
         )
 
 
+@pytest.mark.unit
 def test_pipeline_dag_import():
     dagbag = DagBag(Path(f"{dirname(__file__)}/../src"), include_examples=False)
     # check: dag imported without errors & registered
