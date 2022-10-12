@@ -110,4 +110,6 @@ def vectorize_features(df: pd.DataFrame) -> NDArray[np.float_]:
             ("numeric", StandardScaler(), df.select_dtypes(include="number").columns),
         ],
         remainder="passthrough",
-    ).fit_transform(df)
+    ).fit_transform(
+        df
+    )  # type: ignore

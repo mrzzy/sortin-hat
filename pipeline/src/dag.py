@@ -4,7 +4,7 @@
 # Airflow DAG
 #
 
-from typing import Dict, Iterable, cast
+from typing import Dict, Iterable, Tuple, cast
 
 import pandas as pd
 from airflow.decorators import dag, task
@@ -14,6 +14,7 @@ from pendulum.datetime import DateTime
 from pendulum.tz import timezone
 
 from extract import extract_features, vectorize_features
+from model import MODELS
 from transform import unpivot_subjects
 
 TIMEZONE = "Asia/Singapore"
@@ -64,6 +65,13 @@ def load_dataset(
             for year in years
         ]
     )
+
+
+def split_features_labels(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+    """Split the given dataset into a input features & target series."""
+    # Prediction Target
+    TARGET = "Score"
+    return (df[[column for column in df.columns if column != TARGET]], df[TARGET])
 
 
 @dag(
@@ -177,8 +185,9 @@ def pipeline(
             storage_options=storage_opts,
         )
 
-    @task(task_id="experiment_models")
-    def experiment_models(
+    @task(depends_on_past=True)
+    def experiment_model(
+        model_name: str,
         gcp_connection_id: str,
         datasets_bucket: str,
         dataset_prefix: str,
@@ -188,8 +197,8 @@ def pipeline(
         data_interval_start: DateTime = cast(DateTime, None),
     ):
         # TODO(mrzzy): run on ray cluster
-        """
-        Experiment by Training & Evaluating Machine Learning models.
+        f"""
+        Experiment by Training & Evaluating an {model_name} model.
 
         Trains multiple models on the Training set with different hyperparameters
         in order to experiment with hyperparameter combinations:
@@ -224,11 +233,16 @@ def pipeline(
         validate_df = load_years([current_year - 1])
         test_df = load_years([current_year])
 
+        # split input features from target values
+        train_feature_df, train_targets = split_features_labels(train_df)
+        validate_feature_df, validate_targets = split_features_labels(validate_df)
+        test_feature_df, test_targets = split_features_labels(test_df)
+
         # extract features vectors for ML models from datasets
         prepare_features = lambda df: vectorize_features(extract_features(df))
-        train_features = prepare_features(train_df)
-        validate_features = prepare_features(validate_df)
-        test_features = prepare_features(test_df)
+        train_features = prepare_features(train_feature_df)
+        validate_features = prepare_features(validate_feature_df)
+        test_features = prepare_features(test_feature_df)
 
     dataset_prefix = "dataset"
     transform_dataset(
@@ -240,6 +254,3 @@ def pipeline(
         dataset_prefix,
         timezone_str,
     )
-
-
-dag = pipeline()
