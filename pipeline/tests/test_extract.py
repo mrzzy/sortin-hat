@@ -6,6 +6,7 @@
 
 from itertools import cycle, islice
 from typing import Any, Dict
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ from extract import (
     PSLE_SUBJECTS,
     SPORTS_LEVEL_MAPPING,
     extract_features,
+    featurize_dataset,
     map_values,
     vectorize_features,
 )
@@ -106,3 +108,17 @@ def test_vectorize_features(dummy_data: Dict[str, Any]):
     numeric_df = df.select_dtypes(include="number")
     features = vectorize_features(numeric_df)
     assert (features == StandardScaler().fit_transform(numeric_df.values)).all()
+
+
+@pytest.mark.unit
+def test_featurize_dataset(dummy_data: Dict[str, Any]):
+    # use first column of dummy datafram as target
+    df = pd.DataFrame(dummy_data)
+    target, feature_df = df.columns.to_list()[0], df.iloc[:, 1:]
+
+    with mock.patch(
+        "extract.extract_features", return_value=feature_df
+    ) as extract_features:
+        featurize_dataset(df, target)
+        extract_features.assert_called_once()
+        assert (extract_features.call_args[0][0] == feature_df).all().all()

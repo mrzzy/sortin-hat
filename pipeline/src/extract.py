@@ -113,3 +113,12 @@ def vectorize_features(df: pd.DataFrame) -> NDArray[np.float_]:
     ).fit_transform(
         df
     )  # type: ignore
+
+
+def featurize_dataset(
+    df: pd.DataFrame, target: str = "Score"
+) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
+    """Featurize the dataset given as dataframe into feature vectors & target values."""
+    feature_df = df[[column for column in df.columns if column != target]]
+    feature_df = extract_features(feature_df)
+    return vectorize_features(feature_df), df[target].values  # type: ignore
