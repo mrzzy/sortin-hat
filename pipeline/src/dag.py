@@ -271,3 +271,6 @@ def pipeline(
         dataset_prefix,
         timezone_str,
     )
+
+
+dag = pipeline()

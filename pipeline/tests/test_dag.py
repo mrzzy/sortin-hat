@@ -72,4 +72,5 @@ def test_load_dataset(dummy_data: Dict[str, Any], gcp_connection: Connection):
 def test_pipeline_dag_import():
     dagbag = DagBag(Path(f"{dirname(__file__)}/../src"), include_examples=False)
     # check: dag imported without errors & registered
-    assert dagbag.import_errors == {} and DAG_ID in dagbag.dags
+    assert dagbag.import_errors == {}
+    assert DAG_ID in dagbag.dags
