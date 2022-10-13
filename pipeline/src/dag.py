@@ -16,7 +16,7 @@ from ray import tune
 from sklearn.metrics import mean_squared_error, r2_score
 
 from extract import extract_features, featurize_dataset, vectorize_features
-from model import MODELS
+from model import MODELS, evaluate_model
 from transform import unpivot_subjects
 
 TIMEZONE = "Asia/Singapore"
@@ -249,17 +249,15 @@ def pipeline(
                 ),
                 "r2": r2_score,
             }
-            subsets = {
-                "train": (train_features, train_targets),
-                "validate": (validate_features, validate_targets),
-                "test": (test_features, test_targets),
-            }
-            results = {
-                f"{subset}_{metric}": metric_fn(*data)
-                for subset, data in subsets.items()
-                for metric, metric_fn in metrics.items()
-            }
-            tune.report(**results)
+            tune.report(
+                **evaluate_model(
+                    model, metrics, (train_features, train_targets), "train"
+                ),
+                **evaluate_model(
+                    model, metrics, (validate_features, validate_targets), "validate"
+                ),
+                **evaluate_model(model, metrics, (test_features, test_targets), "test"),
+            )
 
     dataset_prefix = "dataset"
     transform_dataset(
