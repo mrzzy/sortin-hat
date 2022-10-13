@@ -5,7 +5,7 @@
 #
 
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Tuple, Type
 
 import numpy as np
 from mlflow import sklearn
@@ -30,7 +30,7 @@ class Model(ABC):
 
     @classmethod
     @abstractmethod
-    def build(cls, params: Dict):
+    def build(cls, params: Dict) -> "Model":
         """Build the model with the given dictionary of hyperparameters."""
         pass
 
@@ -70,7 +70,7 @@ class LinearRegression(Model):
         }
 
     @classmethod
-    def build(cls, params: Dict):
+    def build(cls, params: Dict) -> Model:
         return cls(
             ElasticNet(
                 alpha=params["l2_regularization"],
@@ -126,4 +126,4 @@ def evaluate_model(
     }
 
 
-MODELS = {"Linear Regression": LinearRegression}
+MODELS = {"Linear Regression": LinearRegression}  # type: Dict[str, Type[Model]]

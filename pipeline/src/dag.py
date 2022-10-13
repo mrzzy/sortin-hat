@@ -7,20 +7,17 @@
 from typing import Dict, Iterable, Tuple, cast
 
 import pandas as pd
+from airflow.configuration import conf
 from airflow.decorators import dag, task
 from airflow.models.connection import Connection
+from airflow.models.dag import DAG
 from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
-from ray import tune
-from sklearn.metrics import mean_squared_error, r2_score
-
-from extract import extract_features, featurize_dataset, vectorize_features
-from model import MODELS, evaluate_model
-from transform import unpivot_subjects
 
 TIMEZONE = "Asia/Singapore"
 DAG_ID = "sortin-hat-pipeline"
+DAG_START_DATE = datetime(2016, 1, 1, tz=timezone(TIMEZONE))
 
 
 def pd_storage_opts(gcp_connection_id: str) -> Dict:
@@ -80,7 +77,7 @@ def split_features_labels(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
     dag_id=DAG_ID,
     description="Sortin-hat ML Pipeline",
     # each dag run handles a year-sized data interval from start_date
-    start_date=datetime(2016, 1, 1, tz=timezone(TIMEZONE)),
+    start_date=DAG_START_DATE,
     schedule_interval="@yearly",
 )
 def pipeline(
@@ -139,7 +136,6 @@ def pipeline(
         raw_p6_prefix: str,
         datasets_bucket: str,
         dataset_prefix: str,
-        timezone_str: str,
         data_interval_start: DateTime = cast(DateTime, None),
     ):
         # TODO(mrzzy): unit test
@@ -152,8 +148,7 @@ def pipeline(
         from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
         from clean import clean_extract, clean_p6
-        from extract import extract_features
-        from transform import suffix_subject_level
+        from transform import suffix_subject_level, unpivot_subjects
 
         # load & Clean data from excel spreadsheet(s)
         year = local_year(data_interval_start)
@@ -187,23 +182,22 @@ def pipeline(
             storage_options=storage_opts,
         )
 
-    @task(depends_on_past=True)
+    @task(
+        # delay start date by 4 years task requires at least 3 yearly dataset
+        # partitions to be present
+        start_date=DAG_START_DATE.add(years=4),
+    )
     def train_tuned_model(
         model_name: str,
         gcp_connection_id: str,
         datasets_bucket: str,
         dataset_prefix: str,
-        timezone_str: str,
-        mlflow_experiment_id: str,
-        start_date: DateTime = cast(DateTime, None),
+        dag: DAG = cast(DAG, None),
         data_interval_start: DateTime = cast(DateTime, None),
     ):
-        # TODO(mrzzy): run on ray cluster
         f"""
-        Trains multiple {model_name} models on the Training set with different hyperparameters
-        in order to experiment with hyperparameter combinations:
-        - Feature Preprocessing methods used.
-        - Model-specific Hyperparameters.
+        Trains multiple trials of the {model_name} model on the Training set with
+        different hyperparameters in order to experiment with hyperparameter combinations.
 
         To avoid time leakage, dataset split is selected by cohort year (relative
         to the DAG processed data interval's year):
@@ -214,18 +208,29 @@ def pipeline(
         - Test Set consists the latest cohort year. It is used for unbiased
             estimate of final model performance.
         """
-        # verify we have enough partitions to split dataset into train/validate/test
-        begin_year, current_year = local_year(start_date), local_year(
-            data_interval_start
-        )
+        import ray
+        from ray import tune
+        from ray.tune.integration.mlflow import MLflowLoggerCallback
+        from ray.tune.tune_config import TuneConfig
 
-        n_partitions = current_year - begin_year
+        from lib.model import MODELS, evaluate_model
+
+        # verify we have enough partitions to split dataset into train/validate/test
+        begin_year = local_year(cast(DateTime, dag.start_date))
+        current_year = local_year(data_interval_start)
+
+        n_partitions = current_year - begin_year + 1
         if n_partitions < 3:
             raise RuntimeError(
                 f"DAG Data Interval too small: expected >3 partitions, got {n_partitions}"
             )
 
+        # define objective function for hyperparameter optimization to optimize.
         def objective(params: Dict):
+            from sklearn.metrics import mean_squared_error, r2_score
+
+            from lib.extract import featurize_dataset
+
             # load train, validate & test datasets
             load_years = lambda years: load_dataset(
                 gcp_connection_id, datasets_bucket, dataset_prefix, years
@@ -244,10 +249,11 @@ def pipeline(
 
             # evaluate model fit using metrics
             metrics = {
+                "r2": r2_score,
+                "mse": mean_squared_error,
                 "rmse": lambda features, targets: mean_squared_error(
                     features, targets, squared=False
                 ),
-                "r2": r2_score,
             }
             tune.report(
                 **evaluate_model(
@@ -259,16 +265,38 @@ def pipeline(
                 **evaluate_model(model, metrics, (test_features, test_targets), "test"),
             )
 
+        # upload working dir to ray works  as its needed for imports in objective()
+        ray.init(
+            runtime_env={"env_vars": {"PYTHONPATH": conf.get("core", "dags_folder")}}
+        )
+
+        # TODO(mrzzy): MLflowLoggerCallback
+        # find optimal model hyperparameters with ray tune
+        tuner = tune.Tuner(
+            trainable=objective,
+            param_space=MODELS[model_name].param_space(),
+            tune_config=TuneConfig(
+                metric="validate_mse",
+                num_samples=1,
+            ),
+        )
+        results = tuner.fit()
+
+    # define task dependencies in dag
     dataset_prefix = "dataset"
-    transform_dataset(
+    dataset_op = transform_dataset(
         gcp_connection_id,
         raw_bucket,
         raw_s4_prefix,
         raw_p6_prefix,
         datasets_bucket,
         dataset_prefix,
-        timezone_str,
     )
+    train_op = train_tuned_model(
+        "Linear Regression", gcp_connection_id, datasets_bucket, dataset_prefix
+    )
+
+    dataset_op >> train_op  # type: ignore
 
 
 dag = pipeline()
