@@ -183,9 +183,10 @@ def pipeline(
         )
 
     @task(
-        # delay start date by 4 years task requires at least 3 yearly dataset
+        task_id="train_tuned_model",
+        # delay start date by 3 years task requires at least 3 yearly dataset
         # partitions to be present
-        start_date=DAG_START_DATE.add(years=4),
+        start_date=DAG_START_DATE.add(years=3),
     )
     def train_tuned_model(
         model_name: str,
@@ -208,12 +209,13 @@ def pipeline(
         - Test Set consists the latest cohort year. It is used for unbiased
             estimate of final model performance.
         """
-        import ray
         from ray import tune
         from ray.tune.integration.mlflow import MLflowLoggerCallback
         from ray.tune.tune_config import TuneConfig
+        from sklearn.metrics import mean_squared_error, r2_score
 
-        from lib.model import MODELS, evaluate_model
+        from extract import featurize_dataset
+        from model import MODELS, evaluate_model
 
         # verify we have enough partitions to split dataset into train/validate/test
         begin_year = local_year(cast(DateTime, dag.start_date))
@@ -227,9 +229,6 @@ def pipeline(
 
         # define objective function for hyperparameter optimization to optimize.
         def objective(params: Dict):
-            from sklearn.metrics import mean_squared_error, r2_score
-
-            from lib.extract import featurize_dataset
 
             # load train, validate & test datasets
             load_years = lambda years: load_dataset(
@@ -264,11 +263,6 @@ def pipeline(
                 ),
                 **evaluate_model(model, metrics, (test_features, test_targets), "test"),
             )
-
-        # upload working dir to ray works  as its needed for imports in objective()
-        ray.init(
-            runtime_env={"env_vars": {"PYTHONPATH": conf.get("core", "dags_folder")}}
-        )
 
         # TODO(mrzzy): MLflowLoggerCallback
         # find optimal model hyperparameters with ray tune
