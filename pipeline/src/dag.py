@@ -85,10 +85,9 @@ def pipeline(
     raw_s4_prefix: str = "Sec4_Cohort",
     raw_p6_prefix: str = "P6_Screening",
     datasets_bucket: str = "sss-sortin-hat-datasets",
-    models_bucket: str = "sss-sortin-hat-models",
-    timezone_str: str = TIMEZONE,
+    tune_n_trails: int = 1,
+    mlflow_experiment_id: str = DAG_ID,
     gcp_connection_id="google_cloud_default",
-    mlflow_experiment_id: str = "sss-score-prediction",
 ):
     f"""
     # Sortin-hat ML Pipeline
@@ -112,14 +111,10 @@ def pipeline(
     > An assumption is made that all dates are expressed in the Asia/Singapore time zone.
 
     ## Machine Learning
-    ### Cross Validation
-    Sound ML practice dictates that we train model on a Training set &
-    cross validate our result on an hold out Test set:
-    - Training : All data leading up, but excluding the current year's partition.
-    - Test set: The current year's partition.
-
-    > Current year is defined as the year the data interval the pipeline DAG run
-    is processing.
+    Performs `tune_n_trails` no. of ML Model training/evaluation runs to tune
+    hyperparameters logging. Increasing `tune_n_trails` will conduct a more extensive
+    hyperparameter search to find better hyperparameters. However, it comes at
+    the trade of needing more computing power to run these trials.
 
     ## Outputs
     MLFlow Models & Evaluation results from the ML training process stored in the
@@ -190,6 +185,7 @@ def pipeline(
     )
     def train_tuned_model(
         model_name: str,
+        n_trials: int,
         gcp_connection_id: str,
         datasets_bucket: str,
         dataset_prefix: str,
@@ -197,7 +193,7 @@ def pipeline(
         data_interval_start: DateTime = cast(DateTime, None),
     ):
         f"""
-        Trains multiple trials of the {model_name} model on the Training set with
+        Trains {n_trials} trials of the {model_name} model on the Training set with
         different hyperparameters in order to experiment with hyperparameter combinations.
 
         To avoid time leakage, dataset split is selected by cohort year (relative
@@ -208,6 +204,14 @@ def pipeline(
             for hyperparameter tuning.
         - Test Set consists the latest cohort year. It is used for unbiased
             estimate of final model performance.
+
+        Evaluation of the model is performed with the following metrics on all
+        3 dataset splits:
+        - Mean Squared Error (MSE) is used to perform hyperparameter tuning.
+        - Root MSE provides human interpretable alternative to MSE. It can be
+            interpreted as the average difference between predicted & actual scores.
+        - R2 measures the model's quality of fit by calculating the % of variance
+            in the data accounted for by the model.
         """
         from ray import tune
         from ray.tune.integration.mlflow import MLflowLoggerCallback
@@ -229,7 +233,6 @@ def pipeline(
 
         # define objective function for hyperparameter optimization to optimize.
         def objective(params: Dict):
-
             # load train, validate & test datasets
             load_years = lambda years: load_dataset(
                 gcp_connection_id, datasets_bucket, dataset_prefix, years
@@ -264,17 +267,17 @@ def pipeline(
                 **evaluate_model(model, metrics, (test_features, test_targets), "test"),
             )
 
-        # TODO(mrzzy): MLflowLoggerCallback
+        # TODO(mrzzy): MLflowLoggerCallback & ray.init() with real ray cluster
         # find optimal model hyperparameters with ray tune
         tuner = tune.Tuner(
             trainable=objective,
             param_space=MODELS[model_name].param_space(),
             tune_config=TuneConfig(
                 metric="validate_mse",
-                num_samples=1,
+                num_samples=n_trials,
             ),
         )
-        results = tuner.fit()
+        tuner.fit()
 
     # define task dependencies in dag
     dataset_prefix = "dataset"
@@ -287,7 +290,11 @@ def pipeline(
         dataset_prefix,
     )
     train_op = train_tuned_model(
-        "Linear Regression", gcp_connection_id, datasets_bucket, dataset_prefix
+        model_name="Linear Regression",
+        n_trials=tune_n_trails,
+        gcp_connection_id=gcp_connection_id,
+        datasets_bucket=datasets_bucket,
+        dataset_prefix=dataset_prefix,
     )
 
     dataset_op >> train_op  # type: ignore
