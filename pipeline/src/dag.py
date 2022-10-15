@@ -109,7 +109,7 @@ def pipeline(
     Performs `tune_n_trails` no. of ML Model training/evaluation runs to tune
     hyperparameters logging. Increasing `tune_n_trails` will conduct a more extensive
     hyperparameter search to find better hyperparameters. However, it comes at
-    the trade of needing more computing power to run these trials.
+    the trade off of needing more computing power to run these trials.
 
     ## Outputs
     MLFlow Models & Evaluation results from the ML training process stored in the
