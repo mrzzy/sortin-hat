@@ -66,11 +66,6 @@ def load_dataset(
     )
 
 
-def split_features_labels(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
-    """Split the given dataset into a input features & target series."""
-    # Prediction Target
-    TARGET = "Score"
-    return (df[[column for column in df.columns if column != TARGET]], df[TARGET])
 
 
 @dag(
