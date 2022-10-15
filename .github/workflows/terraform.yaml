@@ -5,7 +5,9 @@
 
 name: "Terraform Validate, Plan & Apply to GCP"
 on:
-  push: {}
+  push:
+    paths:
+      - infra/terraform
 defaults:
   run:
     working-directory: infra/terraform
