@@ -66,8 +66,6 @@ def load_dataset(
     )
 
 
-
-
 @dag(
     dag_id=DAG_ID,
     description="Sortin-hat ML Pipeline",
@@ -135,6 +133,7 @@ def pipeline(
         Both data source & dataset are partitioned by cohort year
         Writes the Parquet dataset in GCS.
         """
+        # imports done within tasks done to speed up dag definition import times
         from airflow.providers.google.cloud.hooks.gcs import GCSHook
 
         from clean import clean_extract, clean_p6
@@ -208,6 +207,7 @@ def pipeline(
         - R2 measures the model's quality of fit by calculating the % of variance
             in the data accounted for by the model.
         """
+        # imports done within tasks done to speed up dag definition import times
         from ray import tune
         from ray.tune.integration.mlflow import MLflowLoggerCallback
         from ray.tune.tune_config import TuneConfig
