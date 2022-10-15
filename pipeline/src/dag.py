@@ -45,7 +45,7 @@ def load_dataset(
 ) -> pd.DataFrame:
     """
     Load the yearly-partitioned Sortin-Hat Dataset as single DataFrame.
-    'years' specifies which year's paritions should be included in the DataFrame.
+    'years' specifies which year's partitions should be included in the DataFrame.
     """
 
     def add_year(df: pd.DataFrame, year: int) -> pd.DataFrame:
