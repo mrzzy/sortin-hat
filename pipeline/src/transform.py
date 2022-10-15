@@ -68,9 +68,8 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
 
     # Suffix subject column with level
     # strip .<DIGIT> suffix on subject column names English.3 -> English
-    digit_re = re.compile(r"(?P<subject>.+)\.\d+$")
-
     def strip_digit(column: str) -> str:
+        digit_re = re.compile(r"(?P<subject>.+)\.\d+$")
         match = digit_re.match(column)
         if match is None:
             return column
