@@ -21,7 +21,7 @@ DAG_START_DATE = datetime(2016, 1, 1, tz=timezone(TIMEZONE))
 
 
 def pd_storage_opts(gcp_connection_id: str) -> Dict:
-    """Build Pandas storage options GCS I/O with the GCP connection specified by id."""
+    """Build Pandas storage options for GCS I/O with the GCP connection specified by id."""
     # extract gcp service account json key path from airflow gcp connection
     return {
         "token": (
