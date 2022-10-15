@@ -24,7 +24,7 @@ class Model(ABC):
 
         Returns:
             Dictionary representing he hyperparameter search space in terms of
-            Ray Tune's Search Space API.
+            Ray Tune's Search Space API. Parameter keys used should be parsable by build().
         """
         pass
 
