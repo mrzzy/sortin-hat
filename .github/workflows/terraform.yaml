@@ -3,7 +3,7 @@
 # Terraform CI Pipeline
 #
 
-name: "Terraform Lint, Plan & Apply to GCP"
+name: "Terraform Validate, Plan & Apply to GCP"
 on:
   push: {}
 defaults:
@@ -11,7 +11,7 @@ defaults:
     working-directory: infra/terraform
 jobs:
   terraform:
-    name: "Lint, Plan & Apply Terraform"
+    name: "Validate, Plan & Apply Terraform"
     runs-on: "ubuntu-20.04"
     env:
       # google provider reads service account key in plaintext via env var
