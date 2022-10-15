@@ -33,7 +33,7 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
     # match 'YYYY Result(s)' columns
     year_re = re.compile(r"(?P<year_result>\d{4}) Results?")
     year_matches = [year_re.match(c) for c in df.columns]
-    # extract the year the subject was taken from the column name & column position
+    # extract the year the subject was taken from the column name
     year_results = [
         int(match.group("year_result")) for match in year_matches if match is not None
     ]
