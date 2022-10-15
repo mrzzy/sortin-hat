@@ -29,6 +29,7 @@ def dummy_data() -> Dict[str, Any]:
 
 @pytest.fixture
 def gcp_connection() -> Connection:
+    """Returns a fake GCP Airflow Connection for testing."""
     return Connection(
         conn_id="google_cloud_default",
         conn_type="google-cloud-platform",
