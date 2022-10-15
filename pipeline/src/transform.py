@@ -48,7 +48,7 @@ def suffix_subject_level(df: pd.DataFrame, year: int) -> pd.DataFrame:
         for year_result in year_results
     }
 
-    # Determine the subjects taken by secondary level
+    # Calculate positions subject columns taken for each secondary level.
     # extract position of YYYY results columns
     year_col_idxs = [i for i, m in enumerate(year_matches) if m is not None]
     year_positions = list(zip(year_results, year_col_idxs))
