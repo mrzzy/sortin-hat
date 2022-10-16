@@ -1,0 +1,31 @@
+#
+# sortin-hat
+# Test Pipeline
+#
+
+name: "Test Sortin-hat Pipeline"
+on:
+  push: {}
+defaults:
+  run:
+    working-directory: pipeline
+jobs:
+  test:
+    strategy:
+      fail-fast: true
+      matrix:
+        kind: [unit, integration]
+    name: "${{ matrix.kind }} Test Sortin-hat Pipeline"
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        # cache pip modules between workflow runs
+        cache: 'pip'
+    - name: "Install development Pip modules"
+      run:
+        pip install -r requirements-dev.txt
+    - name: "Run ${{ matrix.kind }} tests"
+      run: pytest -m ${{ matrix.kind }}

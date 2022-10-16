@@ -1,0 +1,24 @@
+#
+# sortin-hat
+# Lint Pipeline
+#
+
+name: "Lint Code"
+on:
+  push: {}
+jobs:
+  pre-commit:
+    name: "Lint Code with pre-commit hooks"
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+    - name: "Install pre-commit & hooks"
+      run: |
+        pip install pre-commit
+        pre-commit install-hooks
+    - name: "Lint code with hooks"
+      run:
+        pre-commit run

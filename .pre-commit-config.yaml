@@ -9,9 +9,10 @@ repos:
 
 # check for secrets
 - repo: https://github.com/zricethezav/gitleaks
-  rev: v8.8.6
+  rev: v8.14.0
   hooks:
     - id: gitleaks-docker
+      entry: zricethezav/gitleaks:v8.13.0 protect --verbose --redact --staged
 
 # check for spelling mistakes
 - repo: https://github.com/codespell-project/codespell
@@ -42,3 +43,8 @@ repos:
   rev: 22.6.0
   hooks:
   - id: black
+- repo: https://github.com/pycqa/isort
+  rev: 5.10.1
+  hooks:
+    - id: isort
+      name: isort (python)
