@@ -1,0 +1,11 @@
+#
+# Sortin-hat
+# Docker Container
+# MLFlow
+#
+
+FROM python:3.8
+
+RUN pip install --no-cache-dir mlflow==1.29.0
+
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "8889"]

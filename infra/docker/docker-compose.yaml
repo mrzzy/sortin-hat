@@ -1,0 +1,28 @@
+#
+# Sortin-hat
+# Local Development
+# Docker-compose
+#
+
+services:
+  airflow:
+    build: pipeline
+    ports:
+      - 8080:8080
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: False
+    volumes:
+      - ./pipeline/src:/root/airflow/dags:r
+    # consolidates all services needed to run airflow in 1 container.
+    command: ["airflow", "standalone"]
+
+  ray:
+    image: rayproject/ray:2.1.0-py38-cpu
+    command: ["ray", "start", "--head", "--port=6379"]
+    ports:
+      - 6379:8081
+
+  mlflow:
+    build: infra/docker/mlflow
+    ports:
+      - 8089:8082
