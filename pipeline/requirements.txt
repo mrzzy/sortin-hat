@@ -151,7 +151,7 @@ prison==0.2.1
 prometheus-client==0.15.0
 prometheus-flask-exporter==0.20.3
 proto-plus==1.19.6
-protobuf==3.20.0
+protobuf==3.20.2
 psutil==5.9.2
 pyarrow==6.0.1
 pyasn1==0.4.8
