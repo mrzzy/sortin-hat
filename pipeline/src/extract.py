@@ -9,10 +9,8 @@ from typing import Any, Dict, Tuple, Union
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from sklearn.base import TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sqlalchemy.engine.cursor import _NoResultMetaData
 
 # feature extraction mappings
 PSLE_SUBJECTS = ["EL", "MT", "Maths", "Sci", "HMT"]

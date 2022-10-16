@@ -4,10 +4,9 @@
 # Airflow DAG
 #
 
-from typing import Dict, Iterable, Tuple, cast
+from typing import Dict, Iterable, cast
 
 import pandas as pd
-from airflow.configuration import conf
 from airflow.decorators import dag, task
 from airflow.models.connection import Connection
 from airflow.models.dag import DAG
@@ -126,7 +125,6 @@ def pipeline(
         dataset_prefix: str,
         data_interval_start: DateTime = cast(DateTime, None),
     ):
-        # TODO(mrzzy): unit test
         """
         Transform the Data source Excel Spreadsheets into Parquet Dataset of
         ML model tailored Features.
@@ -295,4 +293,4 @@ def pipeline(
     dataset_op >> train_op  # type: ignore
 
 
-dag = pipeline()
+pipeline_dag = pipeline()
