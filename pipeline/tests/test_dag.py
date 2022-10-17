@@ -11,37 +11,18 @@ from typing import Any, Dict
 
 import pandas as pd
 import pytest
-from airflow.models.connection import Connection
 from airflow.models.dagbag import DagBag
 
-from dag import DAG_ID, load_dataset, pd_storage_opts
+from dag import DAG_ID, load_dataset
 
 
 @pytest.mark.unit
-def test_pd_storage_opts(gcp_connection: Connection):
+def test_load_dataset(dummy_data: Dict[str, Any]):
     with mock.patch(
-        "airflow.models.connection.Connection.get_connection_from_secrets",
-        return_value=gcp_connection,
-    ):
-        # check: storage opts contains path to json key
-        assert pd_storage_opts(str(gcp_connection.id)) == {
-            "token": gcp_connection.extra_dejson[
-                "extra__google_cloud_platform__key_path"
-            ]
-        }
-
-
-@pytest.mark.unit
-def test_load_dataset(dummy_data: Dict[str, Any], gcp_connection: Connection):
-    with mock.patch(
-        "airflow.models.connection.Connection.get_connection_from_secrets",
-        return_value=gcp_connection,
-    ), mock.patch(
         "pandas.read_parquet",
         return_value=pd.DataFrame(dummy_data),
     ) as read_parquet:
         bucket, prefix, year = "bucket", "prefix", 2016
-        gcp_id = str(gcp_connection.id)
 
         # check: paritions merged into one dataframe
         expect_df = pd.DataFrame(dummy_data)
@@ -50,7 +31,6 @@ def test_load_dataset(dummy_data: Dict[str, Any], gcp_connection: Connection):
         assert (
             (
                 load_dataset(
-                    gcp_id,
                     datasets_bucket=bucket,
                     dataset_prefix=prefix,
                     years=[year],
@@ -64,7 +44,6 @@ def test_load_dataset(dummy_data: Dict[str, Any], gcp_connection: Connection):
         # check: read_parquet called with correct args
         read_parquet.assert_any_call(
             f"gs://{bucket}/{prefix}/{year}.pq",
-            storage_options=pd_storage_opts(gcp_id),
         )
 
 
