@@ -18,11 +18,12 @@ services:
 
   ray:
     image: rayproject/ray:2.1.0-py38-cpu
-    command: ["ray", "start", "--head", "--port=6379"]
+    command: ["ray", "start", "--head", "--block", "--port=6379"]
     ports:
       - 6379:8081
 
   mlflow:
     build: infra/docker/mlflow
+    command: ["mlflow", "tracking", "--default-artifact-root", "gs://sss-sortin-hat-models"]
     ports:
       - 8089:8082

@@ -74,7 +74,6 @@ def pipeline(
     datasets_bucket: str = "sss-sortin-hat-datasets",
     tune_n_trails: int = 1,
     ray_address: str = "ray:8081",
-    models_bucket: str = "sss-sortin-hat-models",
     mlflow_tracking_url: str = "http://mlflow:8082",
     mlflow_experiment_id: str = DAG_ID,
     gcp_connection_id="google_cloud_default",
@@ -90,7 +89,7 @@ def pipeline(
 
     ### Infrastructure
     The Pipeline expects the following infrastructure to be deployed beforehand.
-    - GCS buckets `raw_bucket`, `datasets_bucket` & `models_bucket`
+    - GCS buckets `raw_bucket`, `datasets_bucket`
     - Ray Cluster listening at `ray_address`.
     - MLFlow Tracking server listening at `mlflow_tracking_url`.
 
@@ -110,7 +109,7 @@ def pipeline(
 
     ## Outputs
     MLFlow Models & Evaluation results from the ML training process stored in the
-    `models_bucket` GCS bucket.
+    MLFlow tracking server.
     """
 
     @task(
@@ -180,7 +179,6 @@ def pipeline(
         datasets_bucket: str,
         dataset_prefix: str,
         ray_address: str,
-        models_bucket: str,
         mlflow_tracking_url: str,
         mlflow_experiment_id: str,
         dag: DAG = cast(DAG, None),
@@ -272,7 +270,6 @@ def pipeline(
         # TODO(mrzzy): gcp credentials via GOOGLE_APPLICATION_CREDS
         mlflow_callback = MLflowLoggerCallback(
             tracking_uri=mlflow_tracking_url,
-            registry_uri=f"gs://{models_bucket}",
             experiment_name=mlflow_experiment_id,
             tags={"model": model_name},
             save_artifact=True,
@@ -306,7 +303,6 @@ def pipeline(
         datasets_bucket=datasets_bucket,
         dataset_prefix=dataset_prefix,
         ray_address=ray_address,
-        models_bucket=models_bucket,
         mlflow_tracking_url=mlflow_tracking_url,
         mlflow_experiment_id=mlflow_experiment_id,
     )
