@@ -13,6 +13,7 @@ from airflow.models.dag import DAG
 from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
+from ray.air.config import RunConfig
 
 TIMEZONE = "Asia/Singapore"
 DAG_ID = "sortin-hat-pipeline"
@@ -78,6 +79,9 @@ def pipeline(
     raw_p6_prefix: str = "P6_Screening",
     datasets_bucket: str = "sss-sortin-hat-datasets",
     tune_n_trails: int = 1,
+    ray_address: str = "ray:8081",
+    models_bucket: str = "sss-sortin-hat-models",
+    mlflow_tracking_url: str = "http://mlflow:8082",
     mlflow_experiment_id: str = DAG_ID,
     gcp_connection_id="google_cloud_default",
 ):
@@ -91,8 +95,10 @@ def pipeline(
     with extra for keyfile json set.
 
     ### Infrastructure
-    GCS buckets `raw_bucket`, `datasets_bucket` & `models_bucket` should be created
-    beforehand.
+    The Pipeline expects the following infrastructure to be deployed beforehand.
+    - GCS buckets `raw_bucket`, `datasets_bucket` & `models_bucket`
+    - Ray Cluster listening at `ray_address`.
+    - MLFlow Tracking server listening at `mlflow_tracking_url`.
 
     ### Data Source
     The pipeline takes in as data source 2 kinds of Excel Spreadsheets stored
@@ -181,6 +187,10 @@ def pipeline(
         gcp_connection_id: str,
         datasets_bucket: str,
         dataset_prefix: str,
+        ray_address: str,
+        models_bucket: str,
+        mlflow_tracking_url: str,
+        mlflow_experiment_id: str,
         dag: DAG = cast(DAG, None),
         data_interval_start: DateTime = cast(DateTime, None),
     ):
@@ -206,6 +216,7 @@ def pipeline(
             in the data accounted for by the model.
         """
         # imports done within tasks done to speed up dag definition import times
+        import ray
         from ray import tune
         from ray.tune.integration.mlflow import MLflowLoggerCallback
         from ray.tune.tune_config import TuneConfig
@@ -260,8 +271,17 @@ def pipeline(
                 **evaluate_model(model, metrics, (test_features, test_targets), "test"),
             )
 
-        # TODO(mrzzy): MLflowLoggerCallback & ray.init() with real ray cluster
-        # find optimal model hyperparameters with ray tune
+        # log tuning experiment to mlflow with callback
+        # TODO(mrzzy): gcp credentials via GOOGLE_APPLICATION_CREDS
+        mlflow_callback = MLflowLoggerCallback(
+            tracking_uri=mlflow_tracking_url,
+            registry_uri=f"gs://{models_bucket}",
+            experiment_name=mlflow_experiment_id,
+            tags={"model": model_name},
+            save_artifact=True,
+        )
+        # find optimal model hyperparameters with ray tune via experiments
+        ray.init(ray_address)
         tuner = tune.Tuner(
             trainable=objective,
             param_space=MODELS[model_name].param_space(),
@@ -269,6 +289,7 @@ def pipeline(
                 metric="validate_mse",
                 num_samples=n_trials,
             ),
+            run_config=RunConfig(callbacks=[mlflow_callback]),
         )
         tuner.fit()
 
@@ -288,6 +309,10 @@ def pipeline(
         gcp_connection_id=gcp_connection_id,
         datasets_bucket=datasets_bucket,
         dataset_prefix=dataset_prefix,
+        ray_address=ray_address,
+        models_bucket=models_bucket,
+        mlflow_tracking_url=mlflow_tracking_url,
+        mlflow_experiment_id=mlflow_experiment_id,
     )
 
     dataset_op >> train_op  # type: ignore
