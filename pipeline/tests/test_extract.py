@@ -14,13 +14,7 @@ import pytest
 from sklearn.preprocessing import StandardScaler
 
 from extract import (
-    CARDING_LEVELS,
-    COURSE_MAPPING,
-    GENDER_MAPPING,
-    HOUSING_MAPPING,
-    PSLE_MAPPING,
     PSLE_SUBJECTS,
-    SPORTS_LEVEL_MAPPING,
     extract_features,
     featurize_dataset,
     map_values,
@@ -47,8 +41,8 @@ def test_map_values():
     )
 
     # check: values mapped in all columns
-    assert (df["A"].values[1:] == np.array([1.0, 99.0])).all()
-    assert (df["B"].values[:3] == np.array([1.0, 99.0, 3.0])).all()
+    assert (df["A"].values[1:] == np.array([1.0, 99.0])).all()  # type: ignore
+    assert (df["B"].values[:3] == np.array([1.0, 99.0, 3.0])).all()  # type: ignore
 
     # check: default applied when mapping is not defined
     assert pd.isna(df["A"][:1]).all()
@@ -58,20 +52,8 @@ def test_map_values():
 
 
 @pytest.mark.unit
-def test_extract_features(dummy_data: Dict[str, Any]):
-    n_keys = lambda mapping, n: list(islice(cycle(mapping.keys()), n))
-    test_data = {
-        # UNKNOWN added to verify mapped default values
-        "Sec4_CardingLevel": CARDING_LEVELS[:2] + ["UNKNOWN"],
-        "Gender": n_keys(GENDER_MAPPING, 3),
-        "Sec4_SportsLevel": n_keys(SPORTS_LEVEL_MAPPING, 2) + ["UNKNOWN"],
-        "Course": n_keys(COURSE_MAPPING, 3),
-        "ResidentialType": n_keys(HOUSING_MAPPING, 3),
-    }
-    test_data.update({subject: n_keys(PSLE_MAPPING, 3) for subject in PSLE_SUBJECTS})
-    test_data.update(dummy_data)
-
-    df = extract_features(pd.DataFrame(test_data))
+def test_extract_features(extract_df: pd.DataFrame):
+    df = extract_features(extract_df)
 
     # check: carding level extraction
     assert (df["Sec4_CardingLevel"] == np.array([True, True, False])).all()
