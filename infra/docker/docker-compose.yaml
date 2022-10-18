@@ -75,7 +75,7 @@ services:
       "--backend-store-uri",  "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@mlflow-postgres/${POSTGRES_DB}"
     ]
     ports:
-      - 8089:8082
+      - 5000:8082
 
   # Single-Node Ray Cluster
   ray:
