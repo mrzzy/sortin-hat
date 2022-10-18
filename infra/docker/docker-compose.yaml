@@ -4,6 +4,9 @@
 # Docker-compose
 #
 
+# NOTE: expects a '.env' file in the same directory that defines environment variables.
+# see the template 'env' file for which variables to define.
+
 services:
   # Airflow Deployment
   airflow-postgres:
