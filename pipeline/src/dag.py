@@ -222,7 +222,7 @@ def pipeline(
         n_partitions = current_year - begin_year + 1
         if n_partitions < 3:
             raise RuntimeError(
-                f"DAG Data Interval too small: expected >3 partitions, got {n_partitions}"
+                f"DAG Data Interval too small: expected >=3 partitions, got {n_partitions}"
             )
 
         # define objective function for hyperparameter optimization to optimize.
