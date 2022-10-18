@@ -22,7 +22,6 @@ services:
       interval: 5s
       retries: 5
 
-
   airflow-migrate-db:
     depends_on:
       airflow-postgres:
@@ -43,8 +42,10 @@ services:
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: False
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@airflow-postgres/${POSTGRES_DB}"
+      AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: "google-cloud-platform://?extra__google_cloud_platform__key_path=%2Fopt%2Fairflow%2Fgcp_key.json"
     volumes:
       - ../../pipeline/src:/opt/airflow/dags:r
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/opt/airflow/gcp_key.json:r"
     # consolidates all services needed to run airflow in 1 container.
     command: ["airflow", "standalone"]
 
