@@ -26,7 +26,7 @@ services:
     depends_on:
       airflow-postgres:
         condition: service_healthy
-    build: ../../pipeline
+    build: pipeline
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@airflow-postgres/${POSTGRES_DB}"
     command: ["airflow", "db", "init"]
@@ -36,7 +36,7 @@ services:
       airflow-migrate-db:
         condition: service_completed_successfully
     restart: on-failure
-    build: ../../pipeline
+    build: pipeline
     ports:
       - 8080:8080
     environment:
@@ -44,7 +44,7 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@airflow-postgres/${POSTGRES_DB}"
       AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: "google-cloud-platform://?extra__google_cloud_platform__key_path=%2Fopt%2Fairflow%2Fgcp_key.json"
     volumes:
-      - ../../pipeline/src:/opt/airflow/dags:r
+      - ./pipeline/src:/opt/airflow/dags:r
       - "${GOOGLE_APPLICATION_CREDENTIALS}:/opt/airflow/gcp_key.json:r"
     # consolidates all services needed to run airflow in 1 container.
     command: ["airflow", "standalone"]
@@ -68,7 +68,7 @@ services:
       mlflow-postgres:
         condition: service_healthy
     restart: on-failure
-    build: ./mlflow
+    build: infra/docker/mlflow
     command: [
       "mlflow", "server",
       "--default-artifact-root", "gs://sss-sortin-hat-models",
