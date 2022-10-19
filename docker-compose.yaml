@@ -80,18 +80,11 @@ services:
   # Single-Node Ray Cluster
   ray:
     restart: on-failure
-    image: rayproject/ray:2.1.0-py38-cpu
+    image: rayproject/ray:2.0.0-py38-cpu
     command: ["ray", "start",
         "--disable-usage-stats", "--head", "--block",
         "--node-ip-address=ray",
-        "--node-manager-port=6438",
-        "--object-manager-port=6437",
-        "--port=6439",
         "--ray-client-server-port=8081"]
-    expose:
-      - 6437
-      - 6438
-      - 6439
     ports:
       - 8081:8081
 
