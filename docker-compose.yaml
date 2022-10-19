@@ -81,9 +81,19 @@ services:
   ray:
     restart: on-failure
     image: rayproject/ray:2.1.0-py38-cpu
-    command: ["ray", "start", "--head", "--block", "--port=6379"]
+    command: ["ray", "start",
+        "--disable-usage-stats", "--head", "--block",
+        "--node-ip-address=ray",
+        "--node-manager-port=6438",
+        "--object-manager-port=6437",
+        "--port=6439",
+        "--ray-client-server-port=8081"]
+    expose:
+      - 6437
+      - 6438
+      - 6439
     ports:
-      - 6379:8081
+      - 8081:8081
 
 volumes:
   airflow-db: {}

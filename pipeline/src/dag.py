@@ -73,7 +73,7 @@ def pipeline(
     raw_p6_prefix: str = "P6_Screening",
     datasets_bucket: str = "sss-sortin-hat-datasets",
     tune_n_trails: int = 1,
-    ray_address: str = "ray:8081",
+    ray_address: str = "ray://ray:8081",
     mlflow_tracking_url: str = "http://mlflow:8082",
     mlflow_experiment_id: str = DAG_ID,
     gcp_connection_id="google_cloud_default",
