@@ -1,7 +1,7 @@
 #
 # Sortin-hat
-# Airflow Piperline
 # Docker Container
+# Airflow Pipeline
 #
 
 FROM apache/airflow:2.4.1-python3.8

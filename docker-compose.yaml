@@ -68,25 +68,32 @@ services:
       mlflow-postgres:
         condition: service_healthy
     restart: on-failure
-    build: infra/docker/mlflow
+    build:
+      context: .
+      dockerfile: infra/docker/mlflow/Dockerfile
     command: [
       "mlflow", "server",
+      "--host=0.0.0.0", "--port=5000",
       "--default-artifact-root", "gs://sss-sortin-hat-models",
-      "--backend-store-uri",  "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@mlflow-postgres/${POSTGRES_DB}"
+      "--backend-store-uri",  "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@mlflow-postgres/${POSTGRES_DB}",
     ]
     ports:
-      - 5000:8082
+      - 8082:5000
 
   # Single-Node Ray Cluster
   ray:
     restart: on-failure
-    image: rayproject/ray:2.0.0-py38-cpu
-    command: ["ray", "start",
+    build:
+      context: .
+      dockerfile: infra/docker/ray/Dockerfile
+    command: [
+        "ray", "start",
         "--disable-usage-stats", "--head", "--block",
         "--node-ip-address=ray",
-        "--ray-client-server-port=8081"]
+        "--ray-client-server-port=10001"
+    ]
     ports:
-      - 8081:8081
+      - 8081:10001
 
 volumes:
   airflow-db: {}
