@@ -8,10 +8,14 @@ from abc import ABC, abstractmethod
 from typing import Callable, Dict, Tuple, Type
 
 import numpy as np
+import pandas as pd
 from mlflow import sklearn
 from numpy.typing import NDArray
 from ray import tune
+from sklearn.compose import ColumnTransformer, make_column_selector
 from sklearn.linear_model import ElasticNet
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 class Model(ABC):
@@ -35,12 +39,12 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def fit(self, features: NDArray[np.float_], labels: NDArray[np.float_]):
+    def fit(self, features: pd.DataFrame, labels: NDArray[np.float_]):
         """Fit the model to the given training batch features & labels."""
         pass
 
     @abstractmethod
-    def predict(self, features: NDArray[np.float_]) -> NDArray[np.float_]:
+    def predict(self, features: pd.DataFrame) -> NDArray[np.float_]:
         """Make a batch of predictions using the given input features."""
         pass
 
@@ -72,16 +76,36 @@ class LinearRegression(Model):
     @classmethod
     def build(cls, params: Dict) -> Model:
         return cls(
-            ElasticNet(
-                alpha=params["l2_regularization"],
-                l1_ratio=params["l1_regularization"],
+            make_pipeline(
+                ColumnTransformer(
+                    transformers=[
+                        # one hot encode categorical columns
+                        (
+                            "categorical",
+                            OneHotEncoder(),
+                            make_column_selector(dtype_include="object"),
+                        ),
+                        # standard scale numeric columns
+                        (
+                            "numeric",
+                            StandardScaler(),
+                            make_column_selector(dtype_include="number"),
+                        ),
+                    ],
+                    # drop unknown features
+                    remainder="drop",
+                ),
+                ElasticNet(
+                    alpha=params["l2_regularization"],
+                    l1_ratio=params["l1_regularization"],
+                ),
             )
         )
 
-    def fit(self, features: NDArray[np.float_], labels: NDArray[np.float_]):
+    def fit(self, features: pd.DataFrame, labels: NDArray[np.float_]):
         self.model.fit(features, labels)
 
-    def predict(self, features: NDArray[np.float_]) -> NDArray[np.float_]:
+    def predict(self, features: pd.DataFrame) -> NDArray[np.float_]:
         return self.model.predict(features)
 
     def save(self, dir_path: str):
@@ -100,7 +124,7 @@ Metric = Callable[[NDArray[np.float_], NDArray[np.float_]], float]
 def evaluate_model(
     model: Model,
     metrics: Dict[str, Metric],
-    data: Tuple[NDArray[np.float_], NDArray[np.float_]],
+    data: Tuple[pd.DataFrame, NDArray[np.float_]],
     prefix: str = "",
 ):
     """Evaluate the given model with the given metrics on the given subset of data.
@@ -111,7 +135,7 @@ def evaluate_model(
         metrics:
             Dictionary of metric names to metric functions.
         data:
-            Dataset to evaluate on, as a tuple of featrue vectors & target values.
+            Dataset to evaluate on, as a tuple of feature dataframe & target values.
         prefix:
             Optional. Prefix to add to keys in the result dictionary.
     Returns:

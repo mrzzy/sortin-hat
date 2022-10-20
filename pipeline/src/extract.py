@@ -119,29 +119,10 @@ def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def vectorize_features(df: pd.DataFrame) -> NDArray[np.float_]:
-    """Vectorize dataframe into feature vectors."""
-    return ColumnTransformer(
-        transformers=[
-            # one hot encode categorical columns
-            (
-                "categorical",
-                OneHotEncoder(),
-                df.select_dtypes(include="object").columns,
-            ),
-            # standard scale numeric columns
-            ("numeric", StandardScaler(), df.select_dtypes(include="number").columns),
-        ],
-        remainder="passthrough",
-    ).fit_transform(
-        df
-    )  # type: ignore
-
-
 def featurize_dataset(
     df: pd.DataFrame, target: str = "Score"
-) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
+) -> Tuple[pd.DataFrame, NDArray[np.float_]]:
     """Featurize the dataset given as dataframe into feature vectors & target values."""
     feature_df = df[[column for column in df.columns if column != target]].copy()
     feature_df = impute_missing(extract_features(feature_df))
-    return vectorize_features(feature_df), df[target].values
+    return feature_df, df[target].values

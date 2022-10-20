@@ -10,7 +10,6 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.preprocessing import StandardScaler
 
 from extract import (
     PSLE_SUBJECTS,
@@ -18,7 +17,6 @@ from extract import (
     featurize_dataset,
     impute_missing,
     map_values,
-    vectorize_features,
 )
 
 
@@ -85,20 +83,6 @@ def test_extract_features(extract_df: pd.DataFrame):
         .all()
         .all()
     )
-
-
-@pytest.mark.unit
-def test_vectorize_features(dummy_data: Dict[str, Any]):
-    df = pd.DataFrame(dummy_data)
-
-    # check: one hot encoding applied to 2x categorical columns
-    features = vectorize_features(df.select_dtypes(include="object"))
-    assert features.shape[-1] == 2 * 3
-    assert ((features == 1) | (features == 0)).all()
-    # check: standard deviation scaling applied to numeric columns
-    numeric_df = df.select_dtypes(include="number")
-    features = vectorize_features(numeric_df)
-    assert (features == StandardScaler().fit_transform(numeric_df.values)).all()
 
 
 @pytest.mark.unit

@@ -9,6 +9,7 @@ from tempfile import mkdtemp
 from typing import Dict
 
 import numpy as np
+import pandas as pd
 import pytest
 from numpy.typing import NDArray
 from ray.tune import Tuner
@@ -79,7 +80,15 @@ def test_evaluate_model(mock_model: Model):
     results = evaluate_model(
         model=mock_model,
         metrics={"mse": mean_squared_error},
-        data=(np.ones((n_rows, 2)), np.zeros((n_rows,))),
+        data=(
+            pd.DataFrame(
+                {
+                    "A": np.ones(n_rows),
+                    "B": np.ones(n_rows),
+                }
+            ),
+            np.zeros((n_rows,)),
+        ),
         prefix=prefix,
     )
 
