@@ -4,7 +4,6 @@
 # Feature Extraction
 #
 
-from itertools import cycle, islice
 from typing import Any, Dict
 from unittest import mock
 
@@ -38,6 +37,7 @@ def test_map_values():
     df = map_values(
         df=test_df,
         mapping=mapping,
+        default=pd.NA,
     )
 
     # check: values mapped in all columns
@@ -48,7 +48,13 @@ def test_map_values():
     assert pd.isna(df["A"][:1]).all()
 
     # check: map series
-    assert (map_values(test_df["A"], mapping)[1:] == np.array([1.0, 99.0])).all()
+    assert (
+        map_values(test_df["A"], mapping, default=pd.NA)[1:] == np.array([1.0, 99.0])
+    ).all()
+
+    # check: raise exception when mapping is not defined & no default is provided
+    with pytest.raises(ValueError):
+        map_values(test_df, mapping)
 
 
 @pytest.mark.unit

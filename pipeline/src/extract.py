@@ -66,10 +66,18 @@ SPORTS_LEVEL_MAPPING = {
 def map_values(
     df: Union[pd.DataFrame, pd.Series],
     mapping: Dict[Any, Any],
-    default: Any = pd.NA,
+    default: Any = "raise",
 ) -> Union[pd.DataFrame, pd.Series]:
     """Map values in the given DataFrame or Series using the given dictionary mapping."""
-    replacer = lambda value: mapping[value] if value in mapping.keys() else default
+
+    def replacer(value):
+        is_missing = value not in mapping.keys()
+        if isinstance(default, str) and default == "raise" and is_missing:
+            raise ValueError(
+                f"Value not defined in mapping & no default given: '{repr(value)}'"
+            )
+        return mapping[value] if not is_missing else default
+
     if isinstance(df, pd.DataFrame):
         return df.applymap(replacer)
     # otherwise, we are dealing with a series, which has an .map() instead of .applymap()
