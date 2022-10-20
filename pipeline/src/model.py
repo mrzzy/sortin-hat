@@ -121,7 +121,7 @@ def evaluate_model(
     predictions = model.predict(features)
 
     return {
-        f"{prefix}{metric}": metric_fn(targets, predictions)
+        f"{prefix}_{metric}": metric_fn(targets, predictions)
         for metric, metric_fn in metrics.items()
     }
 

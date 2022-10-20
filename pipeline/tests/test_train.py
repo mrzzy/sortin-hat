@@ -46,15 +46,16 @@ def test_load_dataset(dummy_data: Dict[str, Any]):
 
 
 @pytest.mark.unit
-# ignore pandas slice assignment & ray convergence warnings
-@pytest.mark.filterwarnings("ignore")
 def test_run_objective(extract_df: pd.DataFrame):
     # check: exception on missing gcp credentials
     with pytest.raises(LookupError):
         run_objective({})
 
     @mock.patch("ray.tune.report")
-    @mock.patch("pandas.read_parquet", return_value=extract_df)
+    @mock.patch(
+        "pandas.read_parquet",
+        side_effect=[extract_df.copy() for _ in range(2016, 2021 + 1)],
+    )
     def test(pd_read_parquet: Mock, ray_tune_report: Mock):
         bucket, prefix = "bucket", "prefix"
         with mock.patch.dict(
@@ -82,7 +83,7 @@ def test_run_objective(extract_df: pd.DataFrame):
             ray_tune_report.call_count == 1
             and ray_tune_report.call_args[1].keys()
             - {
-                f"{subset}{metric}"
+                f"{subset}_{metric}"
                 for subset in ["train", "validate", "test"]
                 for metric in ["r2", "mse", "rmse"]
             }

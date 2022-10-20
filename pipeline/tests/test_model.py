@@ -75,7 +75,7 @@ class TestLinearRegression:
 
 @pytest.mark.unit
 def test_evaluate_model(mock_model: Model):
-    n_rows, prefix = 5, "test_"
+    n_rows, prefix = 5, "test"
     results = evaluate_model(
         model=mock_model,
         metrics={"mse": mean_squared_error},
@@ -84,6 +84,6 @@ def test_evaluate_model(mock_model: Model):
     )
 
     # check: result key's prefixed
-    assert all(["test_" == key[: len(prefix)] for key in results.keys()])
+    assert all(["test" == key[: len(prefix)] for key in results.keys()])
     # check: metric evaluation results
     assert results["test_mse"] == 0.0
