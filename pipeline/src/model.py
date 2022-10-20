@@ -82,7 +82,7 @@ class LinearRegression(Model):
                         # one hot encode categorical columns
                         (
                             "categorical",
-                            OneHotEncoder(),
+                            OneHotEncoder(handle_unknown="ignore"),
                             make_column_selector(dtype_include="object"),
                         ),
                         # standard scale numeric columns
