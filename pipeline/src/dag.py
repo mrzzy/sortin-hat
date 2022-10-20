@@ -17,6 +17,8 @@ from pendulum.datetime import DateTime
 from pendulum.tz import timezone
 from ray.air.config import RunConfig
 
+from clean import P6_COLUMNS
+
 TIMEZONE = "Asia/Singapore"
 DAG_ID = "sortin-hat-pipeline"
 DAG_START_DATE = datetime(2016, 1, 1, tz=timezone(TIMEZONE))
@@ -136,6 +138,8 @@ def pipeline(
                 )
             )
             df = pd.merge(df, p6_df, how="left", on="Serial number")
+        else:
+            df[P6_COLUMNS] = pd.NA
         # write transformed dataset as compressed parquet file
         df.to_parquet(
             f"gs://{datasets_bucket}/{dataset_prefix}/{year}.pq",
