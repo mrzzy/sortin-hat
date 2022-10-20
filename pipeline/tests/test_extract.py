@@ -16,6 +16,7 @@ from extract import (
     PSLE_SUBJECTS,
     extract_features,
     featurize_dataset,
+    impute_missing,
     map_values,
     vectorize_features,
 )
@@ -62,13 +63,15 @@ def test_extract_features(extract_df: pd.DataFrame):
     df = extract_features(extract_df)
 
     # check: carding level extraction
-    assert (df["Sec4_CardingLevel"] == np.array([True, True, False])).all()
+    assert (
+        df["Sec4_CardingLevel"].values[:2] == np.array([True, True])
+    ).all() and pd.isna(df["Sec4_CardingLevel"][2])
     # check: gender extraction
     assert (df["Gender"] == np.array([1, 0, 1])).all()
     # check: sports level extraction
-    assert (df["Sec4_SportsLevel"].values[:2] == np.array([1, 2])).all() and df[
-        "Sec4_SportsLevel"
-    ][2] == 10
+    assert (df["Sec4_SportsLevel"].values[:2] == np.array([1, 2])).all() and pd.isna(
+        df["Sec4_SportsLevel"][2]
+    )
     # check: course extraction
     assert (df["Course"] == np.array([1, 2, 3])).all()
     # check: residential extraction
@@ -96,6 +99,24 @@ def test_vectorize_features(dummy_data: Dict[str, Any]):
     numeric_df = df.select_dtypes(include="number")
     features = vectorize_features(numeric_df)
     assert (features == StandardScaler().fit_transform(numeric_df.values)).all()
+
+
+@pytest.mark.unit
+def test_impute_missing():
+    df = impute_missing(
+        pd.DataFrame(
+            {
+                "categorical": ["BAD", "OK", "OK", pd.NA],
+                "numeric": [4, 5, 5, pd.NA],
+            }
+        )
+    )
+
+    # check: categorical column imputed with mode
+    print(df["categorical"])
+    assert df.loc[3, "categorical"] == "OK"
+    # check: numeric column imputed with median
+    assert df.loc[3, "numeric"] == 5
 
 
 @pytest.mark.unit
