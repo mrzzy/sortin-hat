@@ -79,17 +79,17 @@ def map_values(
 def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     """Extract feature vector suitable for ML models from the given dataframe."""
     # extract categorical features using feature extraction mappings
-    df["Sec4_CardingLevel"] = map_values(
+    df.loc[:, "Sec4_CardingLevel"] = map_values(
         df["Sec4_CardingLevel"], CARDING_MAPPING, default=False
     )
-    df["Gender"] = map_values(df["Gender"], GENDER_MAPPING)
+    df.loc[:, "Gender"] = map_values(df["Gender"], GENDER_MAPPING)
     # rank missing sports levels in the last ranking (10)
-    df["Sec4_SportsLevel"] = map_values(
+    df.loc[:, "Sec4_SportsLevel"] = map_values(
         df["Sec4_SportsLevel"], SPORTS_LEVEL_MAPPING, default=10
     )
-    df["Course"] = map_values(df["Course"], COURSE_MAPPING)
-    df["ResidentialType"] = map_values(df["ResidentialType"], HOUSING_MAPPING)
-    df[PSLE_SUBJECTS] = map_values(df[PSLE_SUBJECTS], PSLE_MAPPING)
+    df.loc[:, "Course"] = map_values(df["Course"], COURSE_MAPPING)
+    df.loc[:, "ResidentialType"] = map_values(df["ResidentialType"], HOUSING_MAPPING)
+    df.loc[:, PSLE_SUBJECTS] = map_values(df[PSLE_SUBJECTS], PSLE_MAPPING)
 
     return df
 
@@ -119,4 +119,4 @@ def featurize_dataset(
     """Featurize the dataset given as dataframe into feature vectors & target values."""
     feature_df = df[[column for column in df.columns if column != target]]
     feature_df = extract_features(feature_df)
-    return vectorize_features(feature_df), df[target].values  # type: ignore
+    return vectorize_features(feature_df), df[target].values  # type: ignor]e
