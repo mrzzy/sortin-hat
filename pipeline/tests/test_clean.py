@@ -44,13 +44,13 @@ def test_clean_p6():
 @pytest.mark.unit
 def test_clean_extract():
     data = {
-        "missing": ["-", "0", 0, "-", "0"],
-        "Serial number": [1, 2, 3, np.nan, 5],
-        "Sec4_BoardingStatus": list(range(1, 6)),
-        "Sec4_SportsLevel": ["L1", "1", np.nan, "L2", "L1"],
-        "Course": ["Express", "Express", "Normal", "Normal", 1],
+        "missing": ["-", "0", 0, "-", "0", "-"],
+        "Serial number": [1, 2, 3, np.nan, 5, 6],
+        "Sec4_BoardingStatus": list(range(1, 7)),
+        "Sec4_SportsLevel": ["L1", "1", np.nan, "L2", "L1", "1"],
+        "Course": ["Express", "Express", "Normal", "Normal", 1, " "],
     }
-    data.update({subject: list(PSLE_MAPPING.keys())[:5] for subject in PSLE_SUBJECTS})
+    data.update({subject: list(PSLE_MAPPING.keys())[:6] for subject in PSLE_SUBJECTS})
     df = clean_extract(pd.DataFrame(data))
 
     # check: missing values are converted to nan

@@ -110,8 +110,9 @@ def clean_extract(df: pd.DataFrame) -> pd.DataFrame:
     # drop rows with missing serial no.
     # TODO(mrzzy): add warning
     df = df.dropna(subset=["Serial number"])
-    # drop rows with non-string course
+    # drop rows with non-string or empty course
     df = df[[isinstance(v, str) for v in df["Course"]]]
+    df = df[df["Course"].str.strip().str.len() != 0]
 
     # strip leading 'L' from level as some level's are missing leading 'L'
     df["Sec4_SportsLevel"] = df["Sec4_SportsLevel"].str.replace("L", "")
