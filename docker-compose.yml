@@ -94,6 +94,10 @@ services:
     ]
     ports:
       - 8081:10001
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /gcp_key.json
+    volumes:
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/gcp_key.json:r"
 
 volumes:
   airflow-db: {}
