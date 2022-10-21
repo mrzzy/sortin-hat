@@ -6,9 +6,6 @@
 name: "Test Sortin-hat Pipeline"
 on:
   push: {}
-defaults:
-  run:
-    working-directory: pipeline
 jobs:
   test:
     env:
@@ -28,7 +25,7 @@ jobs:
         cache: 'pip'
     - name: "Install development Pip modules"
       run:
-        pip install -r requirements-dev.txt
+        pip install -r pipeline/requirements-dev.txt
     - name: "Write GCP Key & Template dotenv file"
       run: |
         printf '${GCP_PIPELINE_SERVICE_ACCOUNT_KEY}' > $GOOGLE_APPLICATION_CREDENTIALS
@@ -37,4 +34,5 @@ jobs:
           s/GOOGLE_APPLICATION_CREDENTIALS=/GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}/;
         " env >.env
     - name: "Run ${{ matrix.kind }} tests"
+      working-directory: pipeline
       run: pytest -m ${{ matrix.kind }}
