@@ -26,6 +26,9 @@ from dag import DAG_ID, TIMEZONE
 # resolve path to the project root directory
 PROJECT_ROOT = abspath(f"{dirname(__file__)}/../..")
 
+AIRFLOW_ADDRESS = "http://localhost:8080"
+MLFLOW_ADDRESS = "http://localhost:8082"
+
 
 def load_dotenv(path: str):
     """Load the env vars defined in the .env file at the given path."""
@@ -56,7 +59,7 @@ def poll(call: Callable[[], bool], timeout_secs: int = 30) -> bool:
 
     Args:
         call:
-            Callable to repeated call. It should return True to to signal success,
+            Callable to repeatedly call. It should return True to to signal success,
             False otherwise.
         timeout_secs:
             No. of seconds before a timeout occurs.
@@ -88,7 +91,7 @@ def test_bucket() -> Generator[str, None, None]:
 @pytest.fixture
 def ml() -> MlflowClient:
     """Returns a MlflowClient for testing."""
-    return MlflowClient("http://mlflow:5000")
+    return MlflowClient(MLFLOW_ADDRESS)
 
 
 @pytest.fixture
@@ -108,8 +111,7 @@ def test_pipeline_dag(ml: MlflowClient, ml_experiment: str, test_bucket: str):
         build=True,
     ) as c:
         # wait for airflow to start listening for connections
-        airflow_address = "http://localhost:8080"
-        c.wait_for(airflow_address)
+        c.wait_for(AIRFLOW_ADDRESS)
 
         # check: pipeline dag run executes successfully
         params = {
