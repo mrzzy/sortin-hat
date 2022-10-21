@@ -110,8 +110,9 @@ def test_pipeline_dag(ml: MlflowClient, ml_experiment: str, test_bucket: str):
         pull=True,
         build=True,
     ) as c:
-        # wait for airflow to start listening for connections
+        # wait for airflow & mlflow to start listening for connections
         c.wait_for(AIRFLOW_ADDRESS)
+        c.wait_for(MLFLOW_ADDRESS)
 
         # check: pipeline dag run executes successfully
         params = {
