@@ -26,9 +26,12 @@ jobs:
     - name: "Install development Pip modules"
       run:
         pip install -r pipeline/requirements-dev.txt
+    - name: "Deoce & Write GCP Key"
+      run: >
+        printf '${{ secrets.GCP_PIPELINE_SERVICE_ACCOUNT_KEY_B64 }}' |
+          base64 -d > $GOOGLE_APPLICATION_CREDENTIALS
     - name: "Write GCP Key & Template dotenv file"
       run: |
-        printf '${{ secrets.GCP_PIPELINE_SERVICE_ACCOUNT_KEY }}' > $GOOGLE_APPLICATION_CREDENTIALS
         sed -e "
           s/POSTGRES_PASSWORD=/POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}/;
           s|GOOGLE_APPLICATION_CREDENTIALS=|GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS|;
