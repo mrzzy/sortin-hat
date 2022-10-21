@@ -11,6 +11,8 @@ defaults:
     working-directory: pipeline
 jobs:
   test:
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: gcp_key.json
     strategy:
       fail-fast: true
       matrix:
@@ -27,5 +29,12 @@ jobs:
     - name: "Install development Pip modules"
       run:
         pip install -r requirements-dev.txt
+    - name: "Write GCP Key & Template dotenv file"
+      run: |
+        printf '${GCP_PIPELINE_SERVICE_ACCOUNT_KEY}' > $GOOGLE_APPLICATION_CREDENTIALS
+        sed -e "
+          s/POSTGRES_PASSWORD=/POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}/;
+          s/GOOGLE_APPLICATION_CREDENTIALS=/GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}/;
+        " env >.env
     - name: "Run ${{ matrix.kind }} tests"
       run: pytest -m ${{ matrix.kind }}
