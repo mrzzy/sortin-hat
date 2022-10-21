@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     env:
-      GOOGLE_APPLICATION_CREDENTIALS: gcp_key.json
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcp_key.json
     strategy:
       fail-fast: true
       matrix:
