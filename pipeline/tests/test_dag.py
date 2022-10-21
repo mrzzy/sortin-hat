@@ -16,6 +16,7 @@ from typing import Callable, Generator
 import pytest
 from airflow.models.dagbag import DagBag
 from google.cloud import storage
+from mlflow.client import MlflowClient
 from pendulum import datetime
 from pendulum.tz.timezone import Timezone
 from testcontainers.compose import DockerCompose
@@ -45,22 +46,13 @@ def test_pipeline_dag_import():
 
 
 # Integration Tests
-@pytest.fixture
-def test_bucket() -> Generator[str, None, None]:
-    """Creates a temporary GCS Bucket to stored results for testing."""
-    # random suffix added to bucket name to prevent collisions
-    suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
-    bucket_name = f"sss-sortin-hat-test-dag-{suffix}"
-
-    load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
-    gcs = storage.Client()
-    bucket = gcs.create_bucket(bucket_name)
-    yield bucket_name
-    bucket.delete()
+def random_suffix() -> str:
+    """Return a random 8 character suffix of lowercase characters and digits."""
+    return f"".join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
 
 def poll(call: Callable[[], bool], timeout_secs: int = 30) -> bool:
-    """Repeated call the given callback until its succeeeds or a timeout occurs.
+    """Repeated call the given callback until its succeeds or a timeout occurs.
 
     Args:
         call:
@@ -80,8 +72,35 @@ def poll(call: Callable[[], bool], timeout_secs: int = 30) -> bool:
     return False
 
 
+@pytest.fixture
+def test_bucket() -> Generator[str, None, None]:
+    """Creates a temporary GCS Bucket to stored results for testing."""
+    # random suffix added to bucket name to prevent collisions
+    bucket_name = f"sss-sortin-hat-test-dag-{random_suffix()}"
+
+    load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+    gcs = storage.Client()
+    bucket = gcs.create_bucket(bucket_name)
+    yield bucket_name
+    bucket.delete()
+
+
+@pytest.fixture
+def ml() -> MlflowClient:
+    """Returns a MlflowClient for testing."""
+    return MlflowClient("http://mlflow:5000")
+
+
+@pytest.fixture
+def ml_experiment(ml: MlflowClient) -> Generator:
+    """Creates a MlFlow for storing test Mlflow test runs"""
+    experiment_id = ml.create_experiment(f"sss-sortin-hat-test-{random_suffix()}")
+    yield experiment_id
+    ml.delete_experiment(experiment_id)
+
+
 @pytest.mark.integration
-def test_pipeline_dag(test_bucket: str):
+def test_pipeline_dag(ml: MlflowClient, ml_experiment: str, test_bucket: str):
     with DockerCompose(
         PROJECT_ROOT,
         env_file=os.path.join(PROJECT_ROOT, ".env"),
@@ -96,6 +115,7 @@ def test_pipeline_dag(test_bucket: str):
         params = {
             "datasets_bucket": test_bucket,
             "models_bucket": test_bucket,
+            "mlflow_experiment_id": ml_experiment,
         }
         logical_date = datetime(2021, 1, 1, tz=Timezone(TIMEZONE))
         assert (
@@ -107,10 +127,8 @@ def test_pipeline_dag(test_bucket: str):
             == 0
         )
 
-    # check: pipeline dag prdu
+    # check: training run recorded as mlflow run
+    runs = ml.search_runs([ml_experiment])
+    assert len(runs) == 1
 
-
-#    assert GCSHook().exists(
-#
-#        test_bucket, f"dataset/{local_year(cast(DateTime, dagrun.execution_date))}.pq
-#    )
+    # TODO(mrzzY): save model in models bucket
