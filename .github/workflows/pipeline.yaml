@@ -40,6 +40,6 @@ jobs:
       env:
         # increase test containers max tries to give more time for compose deployment
         # to boot up during integration test.
-        TC_MAX_TRIES: 240
+        TC_MAX_TRIES: 600
       working-directory: pipeline
       run: pytest -m ${{ matrix.kind }}
