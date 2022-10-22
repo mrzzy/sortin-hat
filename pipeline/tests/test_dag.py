@@ -130,8 +130,8 @@ def test_pipeline_dag(ml: MlflowClient, ml_experiment: str, test_bucket: str):
             == 0
         )
 
-    # check: training run recorded as mlflow run
-    runs = ml.search_runs([ml_experiment])
-    assert len(runs) == 1
+        # check: training run recorded as mlflow run
+        runs = ml.search_runs([ml_experiment])
+        assert len(runs) == 1
 
-    # TODO(mrzzY): save model in models bucket
+    # TODO(mrzzy): check whether the model is stored in the models bucket
