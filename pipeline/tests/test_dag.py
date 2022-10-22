@@ -88,22 +88,8 @@ def test_bucket() -> Generator[str, None, None]:
     bucket.delete()
 
 
-@pytest.fixture
-def ml() -> MlflowClient:
-    """Returns a MlflowClient for testing."""
-    return MlflowClient(MLFLOW_ADDRESS)
-
-
-@pytest.fixture
-def ml_experiment(ml: MlflowClient) -> Generator:
-    """Creates a MlFlow for storing test Mlflow test runs"""
-    experiment_id = ml.create_experiment(f"sss-sortin-hat-test-{random_suffix()}")
-    yield experiment_id
-    ml.delete_experiment(experiment_id)
-
-
 @pytest.mark.integration
-def test_pipeline_dag(ml: MlflowClient, ml_experiment: str, test_bucket: str):
+def test_pipeline_dag(ml: MlflowClient):
     with DockerCompose(
         PROJECT_ROOT,
         env_file=os.path.join(PROJECT_ROOT, ".env"),
@@ -114,11 +100,14 @@ def test_pipeline_dag(ml: MlflowClient, ml_experiment: str, test_bucket: str):
         c.wait_for(AIRFLOW_ADDRESS)
         c.wait_for(MLFLOW_ADDRESS)
 
+        ml = MlflowClient(MLFLOW_ADDRESS)
+        experiment_id = ml.create_experiment(f"sss-sortin-hat-test-{random_suffix()}")
+
         # check: pipeline dag run executes successfully
         params = {
             "datasets_bucket": test_bucket,
             "models_bucket": test_bucket,
-            "mlflow_experiment_id": ml_experiment,
+            "mlflow_experiment_id": experiment_id,
         }
         logical_date = datetime(2021, 1, 1, tz=Timezone(TIMEZONE))
         assert (
@@ -131,7 +120,9 @@ def test_pipeline_dag(ml: MlflowClient, ml_experiment: str, test_bucket: str):
         )
 
         # check: training run recorded as mlflow run
-        runs = ml.search_runs([ml_experiment])
+        runs = ml.search_runs([experiment_id])
         assert len(runs) == 1
+
+        ml.delete_experiment(experiment_id)
 
     # TODO(mrzzy): check whether the model is stored in the models bucket
