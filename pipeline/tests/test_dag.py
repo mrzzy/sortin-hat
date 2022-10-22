@@ -89,7 +89,7 @@ def test_bucket() -> Generator[str, None, None]:
 
 
 @pytest.mark.integration
-def test_pipeline_dag(ml: MlflowClient):
+def test_pipeline_dag(test_bucket: str):
     with DockerCompose(
         PROJECT_ROOT,
         env_file=os.path.join(PROJECT_ROOT, ".env"),
