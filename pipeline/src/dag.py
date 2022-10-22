@@ -139,6 +139,7 @@ def pipeline(
             )
             df = pd.merge(df, p6_df, how="left", on="Serial number")
         else:
+            # insert empty columns to stand in for missing P6 screening data
             df[P6_COLUMNS] = pd.NA
         # write transformed dataset as compressed parquet file
         df.to_parquet(
