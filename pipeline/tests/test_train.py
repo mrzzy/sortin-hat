@@ -47,7 +47,7 @@ def test_load_dataset(dummy_data: Dict[str, Any]):
 
 @pytest.mark.unit
 def test_run_objective(extract_df: pd.DataFrame):
-    # check: exception on missing gcp credentials
+    # check: exception when missing gcp credentials
     with pytest.raises(LookupError):
         run_objective({})
 
