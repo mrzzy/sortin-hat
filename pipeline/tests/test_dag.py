@@ -96,33 +96,40 @@ def test_pipeline_dag(test_bucket: str):
         pull=True,
         build=True,
     ) as c:
-        # wait for airflow & mlflow to start listening for connections
-        c.wait_for(AIRFLOW_ADDRESS)
-        c.wait_for(MLFLOW_ADDRESS)
+        try:
+            # wait for airflow & mlflow to start listening for connections
+            c.wait_for(AIRFLOW_ADDRESS)
+            c.wait_for(MLFLOW_ADDRESS)
 
-        ml = MlflowClient(MLFLOW_ADDRESS)
-        experiment_id = ml.create_experiment(f"sss-sortin-hat-test-{random_suffix()}")
+            ml = MlflowClient(MLFLOW_ADDRESS)
+            experiment_id = ml.create_experiment(f"sss-sortin-hat-test-{random_suffix()}")
 
-        # check: pipeline dag run executes successfully
-        params = {
-            "datasets_bucket": test_bucket,
-            "models_bucket": test_bucket,
-            "mlflow_experiment_id": experiment_id,
-        }
-        logical_date = datetime(2021, 1, 1, tz=Timezone(TIMEZONE))
-        assert (
-            c.exec_in_container(
-                "airflow",
-                f"airflow dag test -t '{json.dumps(params)}' sortin-hat-pipeline"
-                f"transform_dataset {logical_date.strftime('%Y-%m-%d')}",
+            # check: pipeline dag run executes successfully
+            params = {
+                "datasets_bucket": test_bucket,
+                "models_bucket": test_bucket,
+                "mlflow_experiment_id": experiment_id,
+            }
+            logical_date = datetime(2021, 1, 1, tz=Timezone(TIMEZONE))
+            assert (
+                c.exec_in_container(
+                    "airflow",
+                    f"airflow dag test -t '{json.dumps(params)}' sortin-hat-pipeline"
+                    f"transform_dataset {logical_date.strftime('%Y-%m-%d')}",
+                )
+                == 0
             )
-            == 0
-        )
 
-        # check: training run recorded as mlflow run
-        runs = ml.search_runs([experiment_id])
-        assert len(runs) == 1
+            # check: training run recorded as mlflow run
+            runs = ml.search_runs([experiment_id])
+            assert len(runs) == 1
 
-        ml.delete_experiment(experiment_id)
-
+            ml.delete_experiment(experiment_id)
+        except Exception as e:
+            stdout, stderr = c.get_logs()
+            print("STDOUT:")
+            print(stdout.decode())
+            print("STDERR:")
+            print(stderr.decode())
+            raise e
     # TODO(mrzzy): check whether the model is stored in the models bucket
