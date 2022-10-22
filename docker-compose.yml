@@ -44,8 +44,8 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@airflow-postgres/${POSTGRES_DB}"
       AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: "google-cloud-platform://?extra__google_cloud_platform__key_path=%2Fopt%2Fairflow%2Fgcp_key.json"
     volumes:
-      - ./pipeline/src:/opt/airflow/dags:r
-      - "${GOOGLE_APPLICATION_CREDENTIALS}:/opt/airflow/gcp_key.json:r"
+      - ./pipeline/src:/opt/airflow/dags
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/opt/airflow/gcp_key.json"
     # consolidates all services needed to run airflow in 1 container.
     command: ["airflow", "standalone"]
 
@@ -97,7 +97,7 @@ services:
     environment:
       GOOGLE_APPLICATION_CREDENTIALS: /gcp_key.json
     volumes:
-      - "${GOOGLE_APPLICATION_CREDENTIALS}:/gcp_key.json:r"
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/gcp_key.json"
 
 volumes:
   airflow-db: {}
