@@ -111,14 +111,15 @@ def test_pipeline_dag(test_bucket: str):
                 "mlflow_experiment_id": experiment_id,
             }
             logical_date = datetime(2021, 1, 1, tz=Timezone(TIMEZONE))
-            assert (
-                c.exec_in_container(
-                    "airflow",
-                    f"airflow dag test -t '{json.dumps(params)}' sortin-hat-pipeline"
-                    f"transform_dataset {logical_date.strftime('%Y-%m-%d')}",
-                )
-                == 0
+            _, _, return_code = c.exec_in_container(
+                "airflow", [
+                    "airflow", "dags", "test", "-c",
+                    json.dumps(params), 
+                    DAG_ID,
+                    logical_date.strftime('%Y-%m-%d'),
+                ]
             )
+            assert return_code == 0
 
             # check: training run recorded as mlflow run
             runs = ml.search_runs([experiment_id])
