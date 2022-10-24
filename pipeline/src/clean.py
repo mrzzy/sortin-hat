@@ -9,8 +9,8 @@ import pandas as pd
 
 from extract import PSLE_SUBJECTS
 
+# P6 screening data specific columns, omits join column 'Serial number'
 P6_COLUMNS = [
-    "Serial number",
     "Q1 M",
     "Q1F",
     "Q2",
@@ -81,7 +81,7 @@ def clean_p6(df: pd.DataFrame) -> pd.DataFrame:
     df = df.dropna(subset=["Q1 M"])
 
     # Select only required columns
-    df = df[P6_COLUMNS]
+    df = df[["Serial number"] + P6_COLUMNS]
 
     return df
 

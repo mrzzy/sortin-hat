@@ -24,7 +24,8 @@ def test_clean_p6():
         "unused": list(range(n_rows)),
     }
     # cleaning operations do not apply to other columns, add dummy values for them
-    dummy_cols = set(P6_COLUMNS).difference(test_values.keys())
+    expected_cols = set(P6_COLUMNS + [SERIAL_NO])
+    dummy_cols = expected_cols.difference(test_values.keys())
     test_values.update(
         {col: list(range(n_rows)) for col in dummy_cols if col != SERIAL_NO}
     )
@@ -36,7 +37,7 @@ def test_clean_p6():
     # check: serial no. renamed from "Unnamed: 0", dropped invalid number 'x'
     assert (df[SERIAL_NO] == pd.Series([1, 2], name=SERIAL_NO)).all()
     # check: all selected columns are present
-    assert all([c in df.columns for c in P6_COLUMNS])
+    assert all([c in df.columns for c in expected_cols])
     # check: dropped string in "Q1 M" column
     assert (df["Q1 M"] == pd.Series([3, 4], name="Q1 M")).all()
 
