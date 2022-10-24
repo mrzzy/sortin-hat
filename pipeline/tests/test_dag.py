@@ -85,7 +85,8 @@ def test_bucket() -> Generator[str, None, None]:
     gcs = storage.Client()
     bucket = gcs.create_bucket(bucket_name)
     yield bucket_name
-    bucket.delete()
+
+    bucket.delete(force=True)
 
 
 @pytest.mark.integration
