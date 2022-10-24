@@ -148,10 +148,8 @@ def pipeline(
 
     @task(
         task_id="train_tuned_model",
-        # task requires at least 3 yearly dataset partitions to be present
+        # task needs at historical yearly dataset partitions as model training data.
         depends_on_past=True,
-        # delay first task instances 3 years after first dag run.
-        start_date=DAG_START_DATE.add(years=3),
     )
     def train_tuned_model(
         model_name: str,
@@ -200,9 +198,8 @@ def pipeline(
 
         n_partitions = current_year - begin_year + 1
         if n_partitions < 3:
-            raise RuntimeError(
-                f"DAG Data Interval too small: expected >=3 partitions, got {n_partitions}"
-            )
+            print(f"Skipping: DAG Data Interval too small: expected >=3 partitions, got {n_partitions}")
+            return 
 
         # log tuning experiment to mlflow with callback
         mlflow_callback = MLflowLoggerCallback(
