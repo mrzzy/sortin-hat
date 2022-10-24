@@ -41,7 +41,7 @@ def load_dotenv(path: str):
 
 # Unit Tests
 @pytest.mark.unit
-def test_pipeline_dag_import():
+def test_dag_import():
     dagbag = DagBag(Path(f"{dirname(__file__)}/../src"), include_examples=False)
     # check: dag imported without errors & registered
     assert dagbag.import_errors == {}
@@ -104,32 +104,38 @@ def test_pipeline_dag(test_bucket: str):
         ml = MlflowClient(MLFLOW_ADDRESS)
         experiment_name = f"sss-sortin-hat-test-{random_suffix()}"
         experiment_id = ml.create_experiment(experiment_name)
-
-        # check: pipeline dag run executes successfully
         params = {
             "datasets_bucket": test_bucket,
             "models_bucket": test_bucket,
             "mlflow_experiment_id": experiment_id,
         }
-        logical_date = datetime(2021, 1, 1, tz=Timezone(TIMEZONE))
+
+        # check: pipeline dag run executes successfully over time
+        date_fmt = '%Y-%m-%d'
         stdout, stderr, return_code = c.exec_in_container(
             "airflow", [
-                "airflow", "dags", "test", "-c",
-                json.dumps(params), 
+                "airflow", "dags", "backfill", 
+                "--conf", json.dumps(params), 
+                "--start-date", datetime(2016, 1, 1, tz=Timezone(TIMEZONE)).strftime(date_fmt),
+                "--end-date", datetime(2019, 1, 1, tz=Timezone(TIMEZONE)).strftime(date_fmt),
                 DAG_ID,
-                logical_date.strftime('%Y-%m-%d'),
             ]
         )
+
         if return_code != 0:
             raise AssertionError(
                 "Pipeline DAG to failed to execute successfully:\n"
                 f"STDOUT:\n{stdout.encode()}",
                 f"STDERR:\n{stderr.encode()}",
+        )
+
+        # check: training run occured & recorded as mlflow run
+        runs = ml.search_runs([experiment_id])
+        if len(runs) != 1:
+            time.sleep(1000)
+            raise AssertionError(
+                "Expected Pipeline DAG to record Training Run in MlFlow: "
+                f"experiment_name: {experiment_name}, experiment_id: {experiment_id}"
             )
 
-        # check: training run recorded as mlflow run
-        runs = ml.search_runs([experiment_id])
-        assert len(runs) == 1
-
         ml.delete_experiment(experiment_id)
-    # TODO(mrzzy): check whether the model is stored in the models bucket

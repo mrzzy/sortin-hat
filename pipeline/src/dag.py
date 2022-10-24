@@ -148,8 +148,9 @@ def pipeline(
 
     @task(
         task_id="train_tuned_model",
-        # delay start date by 3 years task requires at least 3 yearly dataset
-        # partitions to be present
+        # task requires at least 3 yearly dataset partitions to be present
+        depends_on_past=True,
+        # delay first task instances 3 years after first dag run.
         start_date=DAG_START_DATE.add(years=3),
     )
     def train_tuned_model(
