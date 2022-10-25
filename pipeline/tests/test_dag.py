@@ -26,9 +26,6 @@ from dag import DAG_ID, TIMEZONE
 # resolve path to the project root directory
 PROJECT_ROOT = abspath(f"{dirname(__file__)}/../..")
 
-AIRFLOW_ADDRESS = "http://localhost:8080"
-MLFLOW_ADDRESS = "http://localhost:8082"
-
 
 def load_dotenv(path: str):
     """Load the env vars defined in the .env file at the given path."""
@@ -98,10 +95,14 @@ def test_pipeline_dag(test_bucket: str):
         build=True,
     ) as c:
         # wait for airflow & mlflow to start listening for connections
-        c.wait_for(AIRFLOW_ADDRESS)
-        c.wait_for(MLFLOW_ADDRESS)
+        airflow_address, mlflow_address = (
+            "http://localhost:8080",
+            "http://localhost:8082",
+        )
+        c.wait_for(airflow_address)
+        c.wait_for(mlflow_address)
 
-        ml = MlflowClient(MLFLOW_ADDRESS)
+        ml = MlflowClient(mlflow_address)
         experiment_name = f"sss-sortin-hat-test-{random_suffix()}"
         experiment_id = ml.create_experiment(experiment_name)
         params = {
@@ -111,15 +112,22 @@ def test_pipeline_dag(test_bucket: str):
         }
 
         # check: pipeline dag run executes successfully over time
-        date_fmt = '%Y-%m-%d'
         stdout, stderr, return_code = c.exec_in_container(
-            "airflow", [
-                "airflow", "dags", "backfill", 
-                "--conf", json.dumps(params), 
-                "--start-date", datetime(2016, 1, 1, tz=Timezone(TIMEZONE)).strftime(date_fmt),
-                "--end-date", datetime(2019, 1, 1, tz=Timezone(TIMEZONE)).strftime(date_fmt),
+            "airflow",
+            [
+                "airflow",
+                "dags",
+                "backfill",
+                "--conf",
+                json.dumps(params),
+                "--start-date",
+                datetime(2016, 1, 1, tz=Timezone(TIMEZONE)).isoformat(),
+                "--end-date",
+                datetime(2019, 1, 1, tz=Timezone(TIMEZONE)).isoformat(),
+                "--reset-dagruns",
+                "-y",
                 DAG_ID,
-            ]
+            ],
         )
 
         if return_code != 0:
@@ -127,11 +135,12 @@ def test_pipeline_dag(test_bucket: str):
                 "Pipeline DAG to failed to execute successfully:\n"
                 f"STDOUT:\n{stdout.encode()}",
                 f"STDERR:\n{stderr.encode()}",
-        )
+            )
 
-        # check: training run occured & recorded as mlflow run
+        # check: training run occurred & recorded as mlflow run
         runs = ml.search_runs([experiment_id])
         if len(runs) != 1:
+            print("NOW")
             time.sleep(1000)
             raise AssertionError(
                 "Expected Pipeline DAG to record Training Run in MlFlow: "
