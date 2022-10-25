@@ -94,7 +94,7 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     df["Sec4_SportsLevel"] = map_values(
         df["Sec4_SportsLevel"], SPORTS_LEVEL_MAPPING, default=pd.NA
     )
-    df["Course"] = map_values(df["Course"], COURSE_MAPPING)
+    df["Course"] = map_values(df["Course"], COURSE_MAPPING, default=pd.NA)
     df["ResidentialType"] = map_values(
         df["ResidentialType"], HOUSING_MAPPING, default=pd.NA
     )
