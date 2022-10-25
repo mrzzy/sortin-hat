@@ -6,6 +6,7 @@
 
 import numpy as np
 import pandas as pd
+from mlflow.tracking.client import logging
 
 from extract import PSLE_SUBJECTS
 
@@ -56,6 +57,8 @@ P6_COLUMNS = [
     "Q4k",
 ]
 
+log = logging.getLogger(__name__)
+
 
 def clean_p6(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -74,6 +77,9 @@ def clean_p6(df: pd.DataFrame) -> pd.DataFrame:
     df[SERIAL_NO] = df[SERIAL_NO].replace("x", np.nan)
     # TODO(mrzzy): add warning
     df = df.dropna(subset=[SERIAL_NO])
+    log.warning(
+        f"clean_p6: Dropped {df[SERIAL_NO].isna().sum()} rows without Serial number."
+    )
 
     # coerce unknown strings in Q1 M to NaN
     df["Q1 M"] = pd.to_numeric(df["Q1 M"], errors="coerce")
@@ -123,9 +129,11 @@ def clean_extract(df: pd.DataFrame) -> pd.DataFrame:
     df = df.replace("-", np.nan).replace("0", np.nan).replace(0, np.nan)
 
     # parse & drop rows with missing serial no.
-    # TODO(mrzzy): add warning
     df[SERIAL_NO] = pd.to_numeric(df[SERIAL_NO], errors="coerce")
     df = df.dropna(subset=[SERIAL_NO])
+    log.warning(
+        f"clean_extract: Dropped {df[SERIAL_NO].isna().sum()} rows without Serial number."
+    )
 
     # override types explicitly where pandas type detection fails
     df = df.astype(EXTRACT_SCHEMA)
