@@ -1,0 +1,111 @@
+#
+# Sortin-hat
+# Local Development
+# Docker-compose
+#
+
+# NOTE: expects a '.env' file in the same directory that defines environment variables.
+# see the template 'env' file for which variables to define.
+
+services:
+  # Airflow Deployment
+  airflow-postgres:
+    restart: on-failure
+    image: postgres:14.5-alpine
+    env_file: .env
+    expose:
+      - 5432
+    volumes:
+      - airflow-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
+
+  airflow-migrate-db:
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    build: pipeline
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@airflow-postgres/${POSTGRES_DB}"
+    command: ["airflow", "db", "init"]
+
+  airflow:
+    depends_on:
+      airflow-migrate-db:
+        condition: service_completed_successfully
+    restart: on-failure
+    build: pipeline
+    ports:
+      - 8080:8080
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@airflow-postgres/${POSTGRES_DB}"
+      AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT: "google-cloud-platform://?extra__google_cloud_platform__key_path=%2Fopt%2Fairflow%2Fgcp_key.json"
+    volumes:
+      - ./pipeline/src:/opt/airflow/dags
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/opt/airflow/gcp_key.json"
+    # consolidates all services needed to run airflow in 1 container.
+    command: ["airflow", "standalone"]
+
+  # MLFlow Deployment
+  mlflow-postgres:
+    restart: on-failure
+    image: postgres:14.5-alpine
+    env_file: .env
+    expose:
+      - 5432
+    volumes:
+      - mlflow-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
+
+  mlflow:
+    depends_on:
+      mlflow-postgres:
+        condition: service_healthy
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: infra/docker/mlflow/Dockerfile
+    command: [
+      "mlflow", "server",
+      "--host=0.0.0.0", "--port=5000",
+      "--default-artifact-root", "gs://sss-sortin-hat-models",
+      "--backend-store-uri",  "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@mlflow-postgres/${POSTGRES_DB}",
+    ]
+    ports:
+      - 8082:5000
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /gcp_key.json
+    volumes:
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/gcp_key.json"
+
+
+  # Single-Node Ray Cluster
+  ray:
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: infra/docker/ray/Dockerfile
+    command: [
+        "ray", "start",
+        "--disable-usage-stats", "--head", "--block",
+        "--node-ip-address=ray",
+        "--ray-client-server-port=10001",
+        "--dashboard-host=0.0.0.0",
+        "--dashboard-port=8265",
+    ]
+    ports:
+      - 8081:8265
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /gcp_key.json
+    volumes:
+      - "${GOOGLE_APPLICATION_CREDENTIALS}:/gcp_key.json"
+
+volumes:
+  airflow-db: {}
+  mlflow-db: {}

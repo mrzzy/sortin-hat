@@ -9,6 +9,7 @@ from tempfile import mkdtemp
 from typing import Dict
 
 import numpy as np
+import pandas as pd
 import pytest
 from numpy.typing import NDArray
 from ray.tune import Tuner
@@ -75,15 +76,23 @@ class TestLinearRegression:
 
 @pytest.mark.unit
 def test_evaluate_model(mock_model: Model):
-    n_rows, prefix = 5, "test_"
+    n_rows, prefix = 5, "test"
     results = evaluate_model(
         model=mock_model,
         metrics={"mse": mean_squared_error},
-        data=(np.ones((n_rows, 2)), np.zeros((n_rows,))),
+        data=(
+            pd.DataFrame(
+                {
+                    "A": np.ones(n_rows),
+                    "B": np.ones(n_rows),
+                }
+            ),
+            np.zeros((n_rows,)),
+        ),
         prefix=prefix,
     )
 
     # check: result key's prefixed
-    assert all(["test_" == key[: len(prefix)] for key in results.keys()])
+    assert all(["test" == key[: len(prefix)] for key in results.keys()])
     # check: metric evaluation results
     assert results["test_mse"] == 0.0

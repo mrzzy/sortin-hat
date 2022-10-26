@@ -6,15 +6,14 @@
 name: "Test Sortin-hat Pipeline"
 on:
   push: {}
-defaults:
-  run:
-    working-directory: pipeline
 jobs:
   test:
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcp_key.json
     strategy:
       fail-fast: true
       matrix:
-        kind: [unit, integration]
+        kind: [unit]
     name: "${{ matrix.kind }} Test Sortin-hat Pipeline"
     runs-on: ubuntu-20.04
     steps:
@@ -26,6 +25,21 @@ jobs:
         cache: 'pip'
     - name: "Install development Pip modules"
       run:
-        pip install -r requirements-dev.txt
+        pip install -r pipeline/requirements-dev.txt
+    - name: "Decode & Write GCP Key"
+      run: >
+        printf '${{ secrets.GCP_PIPELINE_SERVICE_ACCOUNT_KEY_B64 }}' |
+          base64 -d > $GOOGLE_APPLICATION_CREDENTIALS
+    - name: "Write GCP Key & Template dotenv file"
+      run: |
+        sed -e "
+          s/POSTGRES_PASSWORD=/POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}/;
+          s|GOOGLE_APPLICATION_CREDENTIALS=|GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS|;
+        " env >.env
     - name: "Run ${{ matrix.kind }} tests"
+      env:
+        # increase test containers max tries to give more time for compose deployment
+        # to boot up during integration test.
+        TC_MAX_TRIES: 600
+      working-directory: pipeline
       run: pytest -m ${{ matrix.kind }}

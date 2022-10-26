@@ -9,8 +9,6 @@ from typing import Any, Dict, Tuple, Union
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 # feature extraction mappings
 PSLE_SUBJECTS = ["EL", "MT", "Maths", "Sci", "HMT"]
@@ -66,10 +64,18 @@ SPORTS_LEVEL_MAPPING = {
 def map_values(
     df: Union[pd.DataFrame, pd.Series],
     mapping: Dict[Any, Any],
-    default: Any = pd.NA,
+    default: Any = "raise",
 ) -> Union[pd.DataFrame, pd.Series]:
     """Map values in the given DataFrame or Series using the given dictionary mapping."""
-    replacer = lambda value: mapping[value] if value in mapping.keys() else default
+
+    def replacer(value):
+        is_missing = value not in mapping.keys()
+        if isinstance(default, str) and default == "raise" and is_missing:
+            raise ValueError(
+                f"Value not defined in mapping & no default given: {repr(value)}"
+            )
+        return mapping[value] if not is_missing else default
+
     if isinstance(df, pd.DataFrame):
         return df.applymap(replacer)
     # otherwise, we are dealing with a series, which has an .map() instead of .applymap()
@@ -80,43 +86,41 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     """Extract feature vector suitable for ML models from the given dataframe."""
     # extract categorical features using feature extraction mappings
     df["Sec4_CardingLevel"] = map_values(
-        df["Sec4_CardingLevel"], CARDING_MAPPING, default=False
+        df["Sec4_CardingLevel"],
+        CARDING_MAPPING,
+        default=pd.NA,
     )
     df["Gender"] = map_values(df["Gender"], GENDER_MAPPING)
-    # rank missing sports levels in the last ranking (10)
     df["Sec4_SportsLevel"] = map_values(
-        df["Sec4_SportsLevel"], SPORTS_LEVEL_MAPPING, default=10
+        df["Sec4_SportsLevel"], SPORTS_LEVEL_MAPPING, default=pd.NA
     )
-    df["Course"] = map_values(df["Course"], COURSE_MAPPING)
-    df["ResidentialType"] = map_values(df["ResidentialType"], HOUSING_MAPPING)
-    df[PSLE_SUBJECTS] = map_values(df[PSLE_SUBJECTS], PSLE_MAPPING)
+    df["Course"] = map_values(df["Course"], COURSE_MAPPING, default=pd.NA)
+    df["ResidentialType"] = map_values(
+        df["ResidentialType"], HOUSING_MAPPING, default=pd.NA
+    )
+    df[PSLE_SUBJECTS] = map_values(df[PSLE_SUBJECTS], PSLE_MAPPING, pd.NA)
 
     return df
 
 
-def vectorize_features(df: pd.DataFrame) -> NDArray[np.float_]:
-    """Vectorize dataframe into feature vectors."""
-    return ColumnTransformer(
-        transformers=[
-            # one hot encode categorical columns
-            (
-                "categorical",
-                OneHotEncoder(),
-                df.select_dtypes(include="object").columns,
-            ),
-            # standard scale numeric columns
-            ("numeric", StandardScaler(), df.select_dtypes(include="number").columns),
-        ],
-        remainder="passthrough",
-    ).fit_transform(
-        df
-    )  # type: ignore
+def impute_missing(df: pd.DataFrame) -> pd.DataFrame:
+    # impute missing values in categorical column with mode
+    categorical_cols = df.select_dtypes(include="object").columns
+    df[categorical_cols] = df[categorical_cols].fillna(
+        df[categorical_cols].mode().iloc[0]
+    )
+
+    # impute missing values in numeric column with median
+    numeric_cols = df.select_dtypes(include="number").columns
+    df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].median().iloc[0])
+
+    return df
 
 
 def featurize_dataset(
     df: pd.DataFrame, target: str = "Score"
-) -> Tuple[NDArray[np.float_], NDArray[np.float_]]:
+) -> Tuple[pd.DataFrame, NDArray[np.float_]]:
     """Featurize the dataset given as dataframe into feature vectors & target values."""
-    feature_df = df[[column for column in df.columns if column != target]]
-    feature_df = extract_features(feature_df)
-    return vectorize_features(feature_df), df[target].values  # type: ignore
+    feature_df = df[[column for column in df.columns if column != target]].copy()
+    feature_df = impute_missing(extract_features(feature_df))
+    return feature_df, df[target].values

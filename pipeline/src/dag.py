@@ -4,7 +4,9 @@
 # Airflow DAG
 #
 
-from typing import Dict, Iterable, cast
+import os
+from os.path import dirname
+from typing import cast
 
 import pandas as pd
 from airflow.decorators import dag, task
@@ -13,56 +15,25 @@ from airflow.models.dag import DAG
 from pendulum import datetime
 from pendulum.datetime import DateTime
 from pendulum.tz import timezone
+from ray.air.config import RunConfig
+
+from clean import P6_COLUMNS
 
 TIMEZONE = "Asia/Singapore"
 DAG_ID = "sortin-hat-pipeline"
 DAG_START_DATE = datetime(2016, 1, 1, tz=timezone(TIMEZONE))
 
 
-def pd_storage_opts(gcp_connection_id: str) -> Dict:
-    """Build Pandas storage options for GCS I/O with the GCP connection specified by id."""
-    # extract gcp service account json key path from airflow gcp connection
-    return {
-        "token": (
-            Connection.get_connection_from_secrets(gcp_connection_id).extra_dejson[
-                "extra__google_cloud_platform__key_path"
-            ]
-        )
-    }
+def gcp_key_path(gcp_connection_id: str) -> str:
+    """Extract the GCP service account json key from the airflow GCP connection specified by id."""
+    return Connection.get_connection_from_secrets(gcp_connection_id).extra_dejson[
+        "extra__google_cloud_platform__key_path"
+    ]
 
 
 def local_year(timestamp: DateTime, local_tz: str = TIMEZONE) -> int:
     """Obtain the year of the given datetime in the local time zone."""
     return timestamp.astimezone(timezone(local_tz)).year
-
-
-def load_dataset(
-    gcp_connection_id: str,
-    datasets_bucket: str,
-    dataset_prefix: str,
-    years: Iterable[int],
-) -> pd.DataFrame:
-    """
-    Load the yearly-partitioned Sortin-Hat Dataset as single DataFrame.
-    'years' specifies which year's partitions should be included in the DataFrame.
-    """
-
-    def add_year(df: pd.DataFrame, year: int) -> pd.DataFrame:
-        df["Year"] = year
-        return df
-
-    return pd.concat(
-        [
-            add_year(
-                pd.read_parquet(
-                    f"gs://{datasets_bucket}/{dataset_prefix}/{year}.pq",
-                    storage_options=pd_storage_opts(gcp_connection_id),
-                ),
-                year,
-            )
-            for year in years
-        ]
-    )
 
 
 @dag(
@@ -78,7 +49,9 @@ def pipeline(
     raw_p6_prefix: str = "P6_Screening",
     datasets_bucket: str = "sss-sortin-hat-datasets",
     tune_n_trails: int = 1,
-    mlflow_experiment_id: str = DAG_ID,
+    ray_address: str = "ray://ray:10001",
+    mlflow_tracking_url: str = "http://mlflow:5000",
+    mlflow_experiment: str = DAG_ID,
     gcp_connection_id="google_cloud_default",
 ):
     f"""
@@ -91,8 +64,10 @@ def pipeline(
     with extra for keyfile json set.
 
     ### Infrastructure
-    GCS buckets `raw_bucket`, `datasets_bucket` & `models_bucket` should be created
-    beforehand.
+    The Pipeline expects the following infrastructure to be deployed beforehand.
+    - GCS buckets `raw_bucket`, `datasets_bucket`
+    - Ray Cluster listening at `ray_address`.
+    - MLFlow Tracking server listening at `mlflow_tracking_url`.
 
     ### Data Source
     The pipeline takes in as data source 2 kinds of Excel Spreadsheets stored
@@ -110,7 +85,7 @@ def pipeline(
 
     ## Outputs
     MLFlow Models & Evaluation results from the ML training process stored in the
-    `models_bucket` GCS bucket.
+    MLFlow tracking server.
     """
 
     @task(
@@ -137,13 +112,14 @@ def pipeline(
         from clean import clean_extract, clean_p6
         from transform import suffix_subject_level, unpivot_subjects
 
+        # configure GCP credentials
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gcp_key_path(gcp_connection_id)
+
         # load & Clean data from excel spreadsheet(s)
         year = local_year(data_interval_start)
-        storage_opts = pd_storage_opts(gcp_connection_id)
         df = clean_extract(
             pd.read_excel(
                 f"gs://{raw_bucket}/{raw_s4_prefix}/{year}.xlsx",
-                storage_options=storage_opts,
             )
         )
 
@@ -158,29 +134,31 @@ def pipeline(
                 pd.read_excel(
                     # header=1: headers are stored in p6 data on the second row
                     f"gs://{raw_bucket}/{raw_p6_prefix}/{year}.xlsx",
-                    storage_options=storage_opts,
                     header=1,
                 )
             )
             df = pd.merge(df, p6_df, how="left", on="Serial number")
+        else:
+            # insert empty columns to stand in for missing P6 screening data
+            df[P6_COLUMNS] = pd.NA
         # write transformed dataset as compressed parquet file
         df.to_parquet(
             f"gs://{datasets_bucket}/{dataset_prefix}/{year}.pq",
-            storage_options=storage_opts,
         )
 
     @task(
         task_id="train_tuned_model",
-        # delay start date by 3 years task requires at least 3 yearly dataset
-        # partitions to be present
-        start_date=DAG_START_DATE.add(years=3),
+        # task needs at historical yearly dataset partitions as model training data.
+        depends_on_past=True,
     )
     def train_tuned_model(
         model_name: str,
         n_trials: int,
-        gcp_connection_id: str,
         datasets_bucket: str,
         dataset_prefix: str,
+        ray_address: str,
+        mlflow_tracking_url: str,
+        mlflow_experiment: str,
         dag: DAG = cast(DAG, None),
         data_interval_start: DateTime = cast(DateTime, None),
     ):
@@ -206,13 +184,13 @@ def pipeline(
             in the data accounted for by the model.
         """
         # imports done within tasks done to speed up dag definition import times
+        import ray
         from ray import tune
         from ray.tune.integration.mlflow import MLflowLoggerCallback
         from ray.tune.tune_config import TuneConfig
-        from sklearn.metrics import mean_squared_error, r2_score
 
-        from extract import featurize_dataset
-        from model import MODELS, evaluate_model
+        from model import MODELS
+        from train import run_objective
 
         # verify we have enough partitions to split dataset into train/validate/test
         begin_year = local_year(cast(DateTime, dag.start_date))
@@ -220,55 +198,44 @@ def pipeline(
 
         n_partitions = current_year - begin_year + 1
         if n_partitions < 3:
-            raise RuntimeError(
-                f"DAG Data Interval too small: expected >3 partitions, got {n_partitions}"
+            print(
+                f"Skipping: DAG Data Interval too small: expected >=3 partitions, got {n_partitions}"
             )
+            return
 
-        # define objective function for hyperparameter optimization to optimize.
-        def objective(params: Dict):
-            # load train, validate & test datasets
-            load_years = lambda years: load_dataset(
-                gcp_connection_id, datasets_bucket, dataset_prefix, years
-            )
-            train_features, train_targets = featurize_dataset(
-                load_years(range(begin_year, current_year - 1))
-            )
-            validate_features, validate_targets = featurize_dataset(
-                load_years([current_year - 1])
-            )
-            test_features, test_targets = featurize_dataset(load_years([current_year]))
-
-            # train model on training set
-            model = MODELS[model_name].build(params)
-            model.fit(train_features, train_targets)
-
-            # evaluate model fit using metrics
-            metrics = {
-                "r2": r2_score,
-                "mse": mean_squared_error,
-                "rmse": lambda features, targets: mean_squared_error(
-                    features, targets, squared=False
-                ),
+        # log tuning experiment to mlflow with callback
+        mlflow_callback = MLflowLoggerCallback(
+            tracking_uri=mlflow_tracking_url,
+            experiment_name=mlflow_experiment,
+            tags={"model": model_name},
+            save_artifact=True,
+        )
+        # find optimal model hyperparameters with ray tune via experiments
+        ray.init(
+            ray_address,
+            runtime_env={
+                "working_dir": dirname(__file__),
+            },
+        )
+        params = MODELS[model_name].param_space()
+        params.update(
+            {
+                "datasets_bucket": datasets_bucket,
+                "dataset_prefix": dataset_prefix,
+                "begin_year": begin_year,
+                "current_year": current_year,
+                "model_name": model_name,
             }
-            tune.report(
-                **evaluate_model(
-                    model, metrics, (train_features, train_targets), "train"
-                ),
-                **evaluate_model(
-                    model, metrics, (validate_features, validate_targets), "validate"
-                ),
-                **evaluate_model(model, metrics, (test_features, test_targets), "test"),
-            )
+        )
 
-        # TODO(mrzzy): MLflowLoggerCallback & ray.init() with real ray cluster
-        # find optimal model hyperparameters with ray tune
         tuner = tune.Tuner(
-            trainable=objective,
-            param_space=MODELS[model_name].param_space(),
+            trainable=run_objective,
+            param_space=params,
             tune_config=TuneConfig(
                 metric="validate_mse",
                 num_samples=n_trials,
             ),
+            run_config=RunConfig(callbacks=[mlflow_callback]),
         )
         tuner.fit()
 
@@ -285,9 +252,11 @@ def pipeline(
     train_op = train_tuned_model(
         model_name="Linear Regression",
         n_trials=tune_n_trails,
-        gcp_connection_id=gcp_connection_id,
         datasets_bucket=datasets_bucket,
         dataset_prefix=dataset_prefix,
+        ray_address=ray_address,
+        mlflow_tracking_url=mlflow_tracking_url,
+        mlflow_experiment=mlflow_experiment,
     )
 
     dataset_op >> train_op  # type: ignore
