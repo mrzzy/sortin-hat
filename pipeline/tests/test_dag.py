@@ -123,7 +123,7 @@ def test_pipeline_dag(test_bucket: str):
                 "--start-date",
                 datetime(2016, 1, 1, tz=Timezone(TIMEZONE)).isoformat(),
                 "--end-date",
-                datetime(2019, 1, 1, tz=Timezone(TIMEZONE)).isoformat(),
+                datetime(2018, 1, 1, tz=Timezone(TIMEZONE)).isoformat(),
                 "--reset-dagruns",
                 "-y",
                 DAG_ID,
