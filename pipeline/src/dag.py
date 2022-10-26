@@ -51,7 +51,7 @@ def pipeline(
     tune_n_trails: int = 1,
     ray_address: str = "ray://ray:10001",
     mlflow_tracking_url: str = "http://mlflow:5000",
-    mlflow_experiment_id: str = DAG_ID,
+    mlflow_experiment: str = DAG_ID,
     gcp_connection_id="google_cloud_default",
 ):
     f"""
@@ -158,7 +158,7 @@ def pipeline(
         dataset_prefix: str,
         ray_address: str,
         mlflow_tracking_url: str,
-        mlflow_experiment_id: str,
+        mlflow_experiment: str,
         dag: DAG = cast(DAG, None),
         data_interval_start: DateTime = cast(DateTime, None),
     ):
@@ -198,13 +198,15 @@ def pipeline(
 
         n_partitions = current_year - begin_year + 1
         if n_partitions < 3:
-            print(f"Skipping: DAG Data Interval too small: expected >=3 partitions, got {n_partitions}")
-            return 
+            print(
+                f"Skipping: DAG Data Interval too small: expected >=3 partitions, got {n_partitions}"
+            )
+            return
 
         # log tuning experiment to mlflow with callback
         mlflow_callback = MLflowLoggerCallback(
             tracking_uri=mlflow_tracking_url,
-            experiment_name=mlflow_experiment_id,
+            experiment_name=mlflow_experiment,
             tags={"model": model_name},
             save_artifact=True,
         )
@@ -254,7 +256,7 @@ def pipeline(
         dataset_prefix=dataset_prefix,
         ray_address=ray_address,
         mlflow_tracking_url=mlflow_tracking_url,
-        mlflow_experiment_id=mlflow_experiment_id,
+        mlflow_experiment=mlflow_experiment,
     )
 
     dataset_op >> train_op  # type: ignore

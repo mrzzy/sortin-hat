@@ -108,7 +108,7 @@ def test_pipeline_dag(test_bucket: str):
         params = {
             "datasets_bucket": test_bucket,
             "models_bucket": test_bucket,
-            "mlflow_experiment_id": experiment_name,
+            "mlflow_experiment": experiment_name,
         }
 
         # check: pipeline dag run executes successfully over time
