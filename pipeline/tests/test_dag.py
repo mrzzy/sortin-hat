@@ -140,8 +140,6 @@ def test_pipeline_dag(test_bucket: str):
         # check: training run occurred & recorded as mlflow run
         runs = ml.search_runs([experiment_id])
         if len(runs) != 1:
-            print("NOW")
-            time.sleep(1000)
             raise AssertionError(
                 "Expected Pipeline DAG to record Training Run in MlFlow: "
                 f"experiment_name: {experiment_name}, experiment_id: {experiment_id}"
